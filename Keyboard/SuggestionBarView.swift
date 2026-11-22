@@ -61,26 +61,50 @@ final class SuggestionBarView: UIView {
         if case .idle = state { set(.idle) }
     }
 
+    /// Text being composed (Korean / Japanese / Chinese). Shown inside the bar, no extra row.
+    var composing = "" {
+        didSet { render() }
+    }
+
+    private var statusText = ""
+    private var statusColor: UIColor = .secondaryLabel
+    private var statusIsHint = false
+
     func set(_ newState: State) {
         state = newState
         defer { onStateChange?() }
         switch newState {
         case .idle:
-            suggestionButton.setTitle(L("입력하면 \(tone.adjective) 원어민 표현으로 바꿔요", "Type to get a \(tone.adjective) native-speaker version"), for: .normal)
-            suggestionButton.setTitleColor(.tertiaryLabel, for: .normal)
+            statusText = L("입력하면 \(tone.adjective) 원어민 표현으로 바꿔요", "Type to get a \(tone.adjective) native-speaker version")
+            statusColor = .tertiaryLabel
+            statusIsHint = true
         case .loading:
-            suggestionButton.setTitle("…", for: .normal)
-            suggestionButton.setTitleColor(.secondaryLabel, for: .normal)
+            statusText = "…"; statusColor = .secondaryLabel; statusIsHint = false
         case .result(let text):
-            suggestionButton.setTitle(text, for: .normal)
-            suggestionButton.setTitleColor(.label, for: .normal)
+            statusText = text; statusColor = .label; statusIsHint = false
         case .ok(let text):
-            suggestionButton.setTitle(text, for: .normal)
-            suggestionButton.setTitleColor(.secondaryLabel, for: .normal)
+            statusText = text; statusColor = .secondaryLabel; statusIsHint = false
         case .message(let text):
-            suggestionButton.setTitle(text, for: .normal)
-            suggestionButton.setTitleColor(.systemRed, for: .normal)
+            statusText = text; statusColor = .systemRed; statusIsHint = false
         }
+        render()
+    }
+
+    private func render() {
+        let out = NSMutableAttributedString()
+        func add(_ text: String, size: CGFloat, color: UIColor) {
+            out.append(NSAttributedString(string: text, attributes: [.font: UIFont.systemFont(ofSize: size), .foregroundColor: color]))
+        }
+        if composing.isEmpty {
+            add(statusText, size: 15, color: statusColor)
+        } else if statusIsHint {
+            add(composing, size: 18, color: .label)
+        } else {
+            add(composing, size: 12, color: .secondaryLabel)
+            add("\n", size: 12, color: .secondaryLabel)
+            add(statusText, size: 15, color: statusColor)
+        }
+        suggestionButton.setAttributedTitle(out, for: .normal)
     }
 
     private func suggestionTapped() {

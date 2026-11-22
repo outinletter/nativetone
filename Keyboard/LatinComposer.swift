@@ -14,9 +14,32 @@ struct LatinComposer {
     mutating func commitLiteral(_ s: String) { raw += s }
     mutating func backspace() { if !raw.isEmpty { raw.removeLast() } }
 
+    /// 小゛゜ key: cycles the last kana through voiced / semi-voiced / small forms (か→が, は→ば→ぱ, つ→っ→づ).
+    mutating func toggleVoicing() {
+        guard let last = raw.last, let next = Kana.cycle[last] else { return }
+        raw.removeLast()
+        raw.append(next)
+    }
+
     static func isLetter(_ s: String) -> Bool {
         s.count == 1 && s.unicodeScalars.allSatisfy { ("a"..."z").contains(Character($0)) || ("A"..."Z").contains(Character($0)) }
     }
+}
+
+enum Kana {
+    private static let groups: [[Character]] = [
+        ["か", "が"], ["き", "ぎ"], ["く", "ぐ"], ["け", "げ"], ["こ", "ご"],
+        ["さ", "ざ"], ["し", "じ"], ["す", "ず"], ["せ", "ぜ"], ["そ", "ぞ"],
+        ["た", "だ"], ["ち", "ぢ"], ["つ", "っ", "づ"], ["て", "で"], ["と", "ど"],
+        ["は", "ば", "ぱ"], ["ひ", "び", "ぴ"], ["ふ", "ぶ", "ぷ"], ["へ", "べ", "ぺ"], ["ほ", "ぼ", "ぽ"],
+        ["あ", "ぁ"], ["い", "ぃ"], ["う", "ぅ", "ゔ"], ["え", "ぇ"], ["お", "ぉ"],
+        ["や", "ゃ"], ["ゆ", "ゅ"], ["よ", "ょ"], ["わ", "ゎ"],
+    ]
+    static let cycle: [Character: Character] = {
+        var d = [Character: Character]()
+        for g in groups { for (i, c) in g.enumerated() { d[c] = g[(i + 1) % g.count] } }
+        return d
+    }()
 }
 
 enum Romaji {

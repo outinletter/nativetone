@@ -19,6 +19,7 @@ final class KeyboardViewController: UIInputViewController {
     private enum Language { case english, korean, japanese, chinese }
     private var language: Language = .english
     private var availableLanguages: [Language] = []
+    private var kanaMode = AppSettings.japaneseLayout == .kana
     private var composer = HangulComposer()
     private var latin = LatinComposer()
 
@@ -47,9 +48,7 @@ final class KeyboardViewController: UIInputViewController {
         if on.contains(.chinese) { list.append(.chinese) }
         return list
     }
-    private let bufferBar = BufferBarView()
     private var heightConstraint: NSLayoutConstraint!
-    private var bufferHeight: NSLayoutConstraint!
     private var returnButton: KeyButton?
     private static let shiftedJamo: [String: String] = [
         "ㅂ": "ㅃ", "ㅈ": "ㅉ", "ㄷ": "ㄸ", "ㄱ": "ㄲ", "ㅅ": "ㅆ", "ㅐ": "ㅒ", "ㅔ": "ㅖ",
@@ -73,28 +72,19 @@ final class KeyboardViewController: UIInputViewController {
         keysStack.spacing = 10
         keysStack.distribution = .fillEqually
         keysStack.translatesAutoresizingMaskIntoConstraints = false
-        bufferBar.translatesAutoresizingMaskIntoConstraints = false
-        bufferBar.isHidden = true
-        bufferBar.onClear = { [weak self] in self?.clearBuffer() }
-        view.addSubview(bufferBar)
         view.addSubview(bar)
         view.addSubview(keysStack)
 
         heightConstraint = view.heightAnchor.constraint(equalToConstant: currentHeight())
         heightConstraint.priority = .init(999)
-        bufferHeight = bufferBar.heightAnchor.constraint(equalToConstant: 0)
         NSLayoutConstraint.activate([
             heightConstraint,
-            bufferHeight,
             // Native-tone strip sits at the very top of the keyboard; the Korean compose buffer is below it.
             bar.topAnchor.constraint(equalTo: view.topAnchor),
             bar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             bar.heightAnchor.constraint(equalToConstant: 44),
-            bufferBar.topAnchor.constraint(equalTo: bar.bottomAnchor),
-            bufferBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            bufferBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            keysStack.topAnchor.constraint(equalTo: bufferBar.bottomAnchor, constant: 8),
+            keysStack.topAnchor.constraint(equalTo: bar.bottomAnchor, constant: 8),
             keysStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 3),
             keysStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -3),
             keysStack.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4),
@@ -114,14 +104,17 @@ final class KeyboardViewController: UIInputViewController {
         tone = AppSettings.tone
         bar.setTone(tone)
         bar.autoMode = AppSettings.autoSuggest
+        let kana = AppSettings.japaneseLayout == .kana
+        if kana != kanaMode {
+            kanaMode = kana
+            if language == .japanese { rebuildKeys() }
+        }
         let langs = languages()
         if langs != availableLanguages {
             availableLanguages = langs
             if !langs.contains(language) {
                 language = .english
                 composeClear()
-                bufferBar.isHidden = true
-                bufferHeight.constant = 0
             }
             rebuildKeys()
         }
@@ -138,7 +131,7 @@ final class KeyboardViewController: UIInputViewController {
 
     /// Height from the app setting, plus room for the Korean compose bar.
     private func currentHeight() -> CGFloat {
-        AppSettings.keyboardHeight.points + (isCompose ? 40 : 0)
+        AppSettings.keyboardHeight.points + 0
     }
 
     // MARK: - Rewrite
@@ -379,14 +372,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func updateBuffer() {
-        bufferBar.setText(composeText)
-    }
-
-    private func clearBuffer() {
-        composeClear()
-        invalidateSuggestion()
-        autoTimer?.invalidate()
-        updateBuffer()
+        bar.composing = composeText
     }
 
     private func toggleLanguage() {
@@ -400,8 +386,6 @@ final class KeyboardViewController: UIInputViewController {
         shifted = false
         capsLock = false
         layer = .letters
-        bufferBar.isHidden = !isCompose
-        bufferHeight.constant = isCompose ? 40 : 0
         heightConstraint.constant = currentHeight()
         bar.set(.idle)
         updateBuffer()
@@ -434,6 +418,11 @@ final class KeyboardViewController: UIInputViewController {
         keysStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         letterBases = []
         shiftButton = nil
+
+        if language == .japanese && layer == .letters && AppSettings.japaneseLayout == .kana {
+            buildKanaKeys()
+            return
+        }
 
         let rows: [[String]]
         switch layer {
@@ -540,6 +529,106 @@ final class KeyboardViewController: UIInputViewController {
         ret.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: 2.2).isActive = true
 
         refreshLetters()
+    }
+
+    // MARK: - Japanese kana (12-key flick) layout
+
+    private func nextLanguageLabel() -> String {
+        let list = availableLanguages.isEmpty ? languages() : availableLanguages
+        let next = list[((list.firstIndex(of: language) ?? 0) + 1) % list.count]
+        switch next {
+        case .english: return "EN"
+        case .korean: return InputLanguage.korean.keyLabel
+        case .japanese: return InputLanguage.japanese.keyLabel
+        case .chinese: return InputLanguage.chinese.keyLabel
+        }
+    }
+
+    private func makeFlick(_ chars: [String]) -> FlickKey {
+        let k = FlickKey(chars: chars)
+        k.onCommit = { [weak self] in self?.typeKana($0) }
+        return k
+    }
+
+    private func typeKana(_ s: String) {
+        // With nothing composed, punctuation goes straight to the host field.
+        if latin.isEmpty && ["、", "。", "？", "！", "…"].contains(s) {
+            textDocumentProxy.insertText(s)
+            return
+        }
+        invalidateSuggestion()
+        latin.commitLiteral(s)
+        updateBuffer()
+        scheduleAutoSuggest()
+    }
+
+    private func moveCursor(_ offset: Int) {
+        guard composeText.isEmpty else { return }
+        textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
+    }
+
+    private func buildKanaKeys() {
+        func hstack(_ views: [UIView]) -> UIStackView {
+            let s = UIStackView(arrangedSubviews: views)
+            s.axis = .horizontal; s.spacing = 5; s.distribution = .fillEqually
+            return s
+        }
+        func vstack(_ views: [UIView], fill: Bool = false) -> UIStackView {
+            let s = UIStackView(arrangedSubviews: views)
+            s.axis = .vertical; s.spacing = 10
+            s.distribution = fill ? .fill : .fillEqually
+            return s
+        }
+
+        // Middle: 3 columns of flick keys + bottom row [小゛゜] [わ] [、。?!]
+        let kana: [[[String]]] = [
+            [["あ", "い", "う", "え", "お"], ["か", "き", "く", "け", "こ"], ["さ", "し", "す", "せ", "そ"]],
+            [["た", "ち", "つ", "て", "と"], ["な", "に", "ぬ", "ね", "の"], ["は", "ひ", "ふ", "へ", "ほ"]],
+            [["ま", "み", "む", "め", "も"], ["や", "（", "ゆ", "）", "よ"], ["ら", "り", "る", "れ", "ろ"]],
+        ]
+        var midRows: [UIView] = kana.map { hstack($0.map(makeFlick)) }
+        let voicing = KeyButton(title: "小゛゜", style: .special, fontSize: 17)
+        voicing.onTap = { [weak self] in
+            guard let self else { return }
+            self.invalidateSuggestion()
+            self.latin.toggleVoicing()
+            self.updateBuffer()
+            self.scheduleAutoSuggest()
+        }
+        midRows.append(hstack([voicing, makeFlick(["わ", "を", "ん", "ー", "〜"]), makeFlick(["、", "。", "？", "！", "…"])]))
+        let mid = vstack(midRows)
+
+        // Left column: 123, cursor left/right, language switch
+        let num = KeyButton(title: "123", style: .special, fontSize: 16)
+        num.onTap = { [weak self] in self?.layer = .numbers; self?.rebuildKeys() }
+        let left = KeyButton(symbol: "chevron.left", style: .special)
+        left.onTap = { [weak self] in self?.moveCursor(-1) }
+        let right = KeyButton(symbol: "chevron.right", style: .special)
+        right.onTap = { [weak self] in self?.moveCursor(1) }
+        let lang = KeyButton(title: nextLanguageLabel(), style: .special, fontSize: 16)
+        lang.onTap = { [weak self] in self?.toggleLanguage() }
+        let leftCol = vstack([num, left, right, lang])
+
+        // Right column: delete, tall space, return
+        let del = KeyButton(symbol: "delete.left", style: .special)
+        del.onRepeat = { [weak self] in self?.backspace() }
+        let space = KeyButton(title: "空白", style: .letter, fontSize: 16)
+        space.onTap = { [weak self] in self?.type(" ") }
+        let ret = KeyButton(title: "return", style: .special, fontSize: 16)
+        ret.onTap = { [weak self] in self?.tapReturn() }
+        returnButton = ret
+        updateReturnLabel()
+        let rightCol = vstack([del, space, ret], fill: true)
+
+        let grid = UIStackView(arrangedSubviews: [leftCol, mid, rightCol])
+        grid.axis = .horizontal; grid.spacing = 5; grid.distribution = .fill
+        keysStack.addArrangedSubview(grid)
+
+        // Constraints across views need the grid in the hierarchy first.
+        rightCol.widthAnchor.constraint(equalTo: leftCol.widthAnchor).isActive = true
+        mid.widthAnchor.constraint(equalTo: leftCol.widthAnchor, multiplier: 3, constant: 10).isActive = true
+        ret.heightAnchor.constraint(equalTo: del.heightAnchor).isActive = true
+        space.heightAnchor.constraint(equalTo: del.heightAnchor, multiplier: 2, constant: 10).isActive = true
     }
 
     private func makeCharKey(_ ch: String) -> KeyButton {

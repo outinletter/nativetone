@@ -6,6 +6,13 @@ struct KeyboardRecord: Codable {
     let date: Date
 }
 
+/// Japanese keyboard layout.
+enum JapaneseLayout: String, CaseIterable, Identifiable {
+    case kana, romaji
+    var id: String { rawValue }
+    var label: String { self == .kana ? L("가나 (플릭)", "Kana (flick)") : L("로마자", "Romaji") }
+}
+
 /// Extra input languages the keyboard can type in (English is always available).
 enum InputLanguage: String, CaseIterable, Identifiable {
     case korean, japanese, chinese
@@ -86,11 +93,17 @@ enum AppSettings {
         static let hasSeenGuide = "hasSeenGuide"
         static let uiLanguage = "uiLanguage"
         static let saveHistory = "saveHistory"
+        static let japaneseLayout = "japaneseLayout"
         static let keyboardQueue = "keyboardQueue"
         static let inputLanguages = "inputLanguages"
         static let keyboardHeight = "keyboardHeight"
         static let haptics = "haptics"
         static let autoCapitalize = "autoCapitalize"
+    }
+
+    static var japaneseLayout: JapaneseLayout {
+        get { JapaneseLayout(rawValue: defaults.string(forKey: Key.japaneseLayout) ?? "") ?? .kana }
+        set { defaults.set(newValue.rawValue, forKey: Key.japaneseLayout) }
     }
 
     /// Save converted sentences to the on-device history (default on). Original input is never saved.

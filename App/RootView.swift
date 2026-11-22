@@ -1,25 +1,224 @@
 import SwiftUI
+import UIKit
 
+/// Single-page app: keyboard setup, settings and history on one screen.
 struct RootView: View {
     @StateObject private var history = HistoryStore()
-    @State private var showGuide = !AppSettings.hasSeenGuide
     @Environment(\.scenePhase) private var scenePhase
 
+    @State private var uiLanguage = AppSettings.uiLanguage
+    @State private var tone = AppSettings.tone
+    @State private var autoSuggest = AppSettings.autoSuggest
+    @State private var inputLanguages = AppSettings.inputLanguages
+    @State private var japaneseLayout = AppSettings.japaneseLayout
+    @State private var keyboardHeight = AppSettings.keyboardHeight
+    @State private var haptics = AppSettings.haptics
+    @State private var autoCapitalize = AppSettings.autoCapitalize
+    @State private var saveHistory = AppSettings.saveHistory
+    @State private var copiedID: UUID?
+
     var body: some View {
-        TabView {
-            RewriteView()
-                .tabItem { Label(L("교정", "Rewrite"), systemImage: "pencil.line") }
-            HistoryView()
-                .tabItem { Label(L("기록", "History"), systemImage: "clock") }
-            SettingsView()
-                .tabItem { Label(L("설정", "Settings"), systemImage: "slider.horizontal.3") }
+        List {
+            header
+            setupSection
+            generalSection
+            keyboardSection
+            historySection
+            privacySection
         }
-        .environmentObject(history)
+        .scrollContentBackground(.hidden)
+        .background(Theme.paper.ignoresSafeArea())
+        .listStyle(.insetGrouped)
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { history.importKeyboardResults() }
         }
-        .sheet(isPresented: $showGuide, onDismiss: { AppSettings.hasSeenGuide = true }) {
-            NavigationStack { KeyboardGuideView(isSheet: true) }
+        .onChange(of: uiLanguage) {
+            AppSettings.uiLanguage = $1
+            NotificationCenter.default.post(name: .uiLanguageChanged, object: nil)
         }
+        .onChange(of: tone) { AppSettings.tone = $1 }
+        .onChange(of: autoSuggest) { AppSettings.autoSuggest = $1 }
+        .onChange(of: japaneseLayout) { AppSettings.japaneseLayout = $1 }
+        .onChange(of: keyboardHeight) { AppSettings.keyboardHeight = $1 }
+        .onChange(of: haptics) { AppSettings.haptics = $1 }
+        .onChange(of: autoCapitalize) { AppSettings.autoCapitalize = $1 }
+        .onChange(of: saveHistory) { AppSettings.saveHistory = $1 }
+    }
+
+    // MARK: - Sections
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Theme.eyebrow("NativeTone")
+            Text(L("문장의 품격을 높입니다", "Precision in every sentence."))
+                .font(Theme.serif(30, .semibold))
+                .fixedSize(horizontal: false, vertical: true)
+            Rectangle().fill(Theme.gold).frame(width: 36, height: 2)
+            Text(L("어떤 앱에서든 한국어·일본어·중국어·영어로 입력하면 자연스러운 원어민 영어로 바꿔 드려요.", "Type in Korean, Japanese, Chinese or English in any app and get natural, native-sounding English."))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 8)
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+    }
+
+    private var setupSection: some View {
+        Section {
+            step(1, L("설정 앱 열기", "Open Settings"), L("아래 버튼으로 NativeTone 설정을 열어요.", "Use the button below to open NativeTone's settings."))
+            step(2, L("키보드 추가", "Add the keyboard"), L("키보드 → NativeTone 을 켜세요.", "Go to Keyboards and turn on NativeTone."))
+            step(3, L("전체 접근 허용", "Allow Full Access"), L("교정하려면 인터넷 연결이 필요해서 '전체 접근 허용'을 켜야 해요.", "Rewriting needs the internet, so turn on 'Allow Full Access'."))
+            step(4, L("키보드 전환", "Switch keyboards"), L("입력창에서 지구본 키를 길게 눌러 NativeTone 을 선택하세요.", "In a text field, press and hold the globe key and choose NativeTone."))
+            Button {
+                if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+            } label: {
+                Text(L("설정 열기", "Open Settings"))
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .listRowBackground(Color.clear)
+        } header: {
+            Theme.eyebrow(L("키보드 설정", "Keyboard setup"))
+        }
+        .listRowBackground(Theme.surface)
+    }
+
+    private var generalSection: some View {
+        Section {
+            Picker(L("앱 언어", "App language"), selection: $uiLanguage) {
+                ForEach(AppLanguage.allCases) { Text($0.nativeName).tag($0) }
+            }
+            Picker(L("기본 톤", "Default tone"), selection: $tone) {
+                ForEach(Tone.allCases) { Text($0.label).tag($0) }
+            }
+        } header: {
+            Theme.eyebrow(L("일반", "General"))
+        }
+        .listRowBackground(Theme.surface)
+    }
+
+    private var keyboardSection: some View {
+        Section {
+            ForEach(InputLanguage.allCases) { lang in
+                Toggle(lang.nativeName, isOn: Binding(
+                    get: { inputLanguages.contains(lang) },
+                    set: { on in
+                        if on { inputLanguages.insert(lang) } else { inputLanguages.remove(lang) }
+                        AppSettings.inputLanguages = inputLanguages
+                    }
+                ))
+            }
+            Picker(L("일본어 자판", "Japanese layout"), selection: $japaneseLayout) {
+                ForEach(JapaneseLayout.allCases) { Text($0.label).tag($0) }
+            }
+            Toggle(L("입력하면 자동으로 교정", "Auto-suggest while typing"), isOn: $autoSuggest)
+            Picker(L("키보드 높이", "Keyboard height"), selection: $keyboardHeight) {
+                ForEach(KeyboardHeight.allCases) { Text($0.label).tag($0) }
+            }
+            Toggle(L("키 입력 진동", "Key haptics"), isOn: $haptics)
+            Toggle(L("문장 시작 자동 대문자", "Auto-capitalize sentences"), isOn: $autoCapitalize)
+        } header: {
+            Theme.eyebrow(L("키보드", "Keyboard"))
+        } footer: {
+            Text(L("영어는 항상 사용할 수 있어요. 켠 언어는 키보드의 언어 키로 전환해요. 일본어는 가나(플릭) 또는 로마자, 중국어는 병음(예: nihao)으로 입력해요. 자동 교정을 켜면 입력을 멈출 때 현재 문장이 서버로 전송돼요.", "English is always available. Enabled languages are switched with the language key. Type Japanese in kana (flick) or romaji and Chinese in pinyin (e.g. nihao). With auto-suggest on, the current sentence is sent to the server when you pause."))
+        }
+        .listRowBackground(Theme.surface)
+    }
+
+    private var historySection: some View {
+        Section {
+            Toggle(L("기록 저장", "Save history"), isOn: $saveHistory)
+            if history.items.isEmpty {
+                Text(L("아직 기록이 없어요.", "No history yet."))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(history.items) { item in
+                    row(item)
+                        // Swipe left to delete; a full swipe deletes immediately.
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) { history.delete([item.id]) } label: {
+                                Label(L("삭제", "Delete"), systemImage: "trash")
+                            }
+                        }
+                }
+            }
+        } header: {
+            HStack {
+                Theme.eyebrow(L("기록", "History"))
+                Spacer()
+                if !history.items.isEmpty {
+                    Button(L("비우기", "Clear"), role: .destructive) { history.clear() }
+                        .font(.caption)
+                }
+            }
+        } footer: {
+            Text(L("변환된 문장만 이 기기에 저장해요. 입력한 원문은 저장하지 않고, 왼쪽으로 밀어 삭제할 수 있어요.", "Only the converted sentence is saved, on this device. Your original text is never saved. Swipe left to delete."))
+        }
+        .listRowBackground(Theme.surface)
+    }
+
+    private var privacySection: some View {
+        Section {
+            Text(L("교정을 요청한 순간의 현재 문장만 서버로 전송해요. 키 입력은 저장하거나 기록하지 않고, 비밀번호 입력창에서는 키보드가 자동으로 꺼져요.", "Only the current sentence is sent for rewriting. Keystrokes are never stored, and the keyboard turns off automatically in password fields."))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        } header: {
+            Theme.eyebrow(L("개인정보", "Privacy"))
+        }
+        .listRowBackground(Theme.surface)
+    }
+
+    // MARK: - Rows
+
+    private func step(_ n: Int, _ title: String, _ detail: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text("\(n)")
+                .font(Theme.serif(16, .semibold))
+                .frame(width: 28, height: 28)
+                .overlay(RoundedRectangle(cornerRadius: 4).stroke(Theme.gold, lineWidth: 1))
+                .foregroundStyle(Theme.gold)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.headline)
+                Text(detail).font(.subheadline).foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    private func row(_ item: HistoryItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if !item.original.isEmpty {
+                Text(item.original)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            HStack(alignment: .top) {
+                Text(item.result.best)
+                    .font(Theme.serif(18))
+                    .lineSpacing(3)
+                Spacer()
+                Button { history.toggleFavorite(item) } label: {
+                    Image(systemName: item.isFavorite ? "bookmark.fill" : "bookmark")
+                        .foregroundStyle(item.isFavorite ? Theme.gold : .secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            HStack(spacing: 8) {
+                Text(item.tone.label.uppercased()).tracking(1.2)
+                Text(item.date, style: .date)
+                Spacer()
+                Text(copiedID == item.id ? L("복사됨", "Copied") : L("탭하여 복사", "Tap to copy"))
+                    .foregroundStyle(copiedID == item.id ? Theme.gold : Color.secondary)
+            }
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(.tertiary)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            UIPasteboard.general.string = item.result.best
+            copiedID = item.id
+        }
+        .padding(.vertical, 6)
     }
 }
