@@ -17,13 +17,16 @@ final class KeyButton: UIButton {
     var onTap: (() -> Void)?
     var onRepeat: (() -> Void)?
 
+    private let style: Style
+    private var popup: UILabel?
     private var delayTimer: Timer?
     private var repeatTimer: Timer?
 
     init(title: String? = nil, symbol: String? = nil, style: Style = .letter, fontSize: CGFloat = 22) {
+        self.style = style
         super.init(frame: .zero)
         backgroundColor = style == .letter ? KeyboardTheme.letterKey : KeyboardTheme.specialKey
-        layer.cornerRadius = 6
+        layer.cornerRadius = 5
         layer.shadowColor = UIColor.black.cgColor
         layer.shadowOffset = CGSize(width: 0, height: 1)
         layer.shadowRadius = 0
@@ -45,10 +48,11 @@ final class KeyButton: UIButton {
 
         addAction(UIAction { [weak self] _ in
             if AppSettings.haptics { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+            self?.showPopup()
             self?.beginRepeat()
         }, for: .touchDown)
         for e: UIControl.Event in [.touchUpInside, .touchUpOutside, .touchCancel] {
-            addAction(UIAction { [weak self] _ in self?.endRepeat() }, for: e)
+            addAction(UIAction { [weak self] _ in self?.endRepeat(); self?.hidePopup() }, for: e)
         }
     }
 
@@ -61,6 +65,29 @@ final class KeyButton: UIButton {
     /// Visual state for toggles such as shift.
     func setActive(_ active: Bool) {
         backgroundColor = active ? KeyboardTheme.letterKey : KeyboardTheme.specialKey
+    }
+
+    /// iOS-style key preview bubble above the pressed character key.
+    private func showPopup() {
+        guard style == .letter, let t = title(for: .normal), t.count == 1, popup == nil else { return }
+        let l = UILabel()
+        l.text = t
+        l.font = .systemFont(ofSize: 34)
+        l.textColor = .label
+        l.textAlignment = .center
+        l.backgroundColor = KeyboardTheme.letterKey
+        l.layer.cornerRadius = 8
+        l.layer.masksToBounds = true
+        let h = bounds.height * 1.15
+        l.frame = CGRect(x: -bounds.width * 0.25, y: -h - 4, width: bounds.width * 1.5, height: h)
+        addSubview(l)
+        layer.zPosition = 10
+        popup = l
+    }
+
+    private func hidePopup() {
+        popup?.removeFromSuperview(); popup = nil
+        layer.zPosition = 0
     }
 
     private func beginRepeat() {

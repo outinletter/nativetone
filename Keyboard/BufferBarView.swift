@@ -39,7 +39,7 @@ final class BufferBarView: UIView {
 
     func setText(_ text: String) {
         if text.isEmpty {
-            label.text = "한글로 입력하면 자연스러운 영어로 바꿔요"
+            label.text = L("한글로 입력하면 자연스러운 영어로 바꿔요", "Type in Korean and I'll turn it into natural English")
             label.textColor = .tertiaryLabel
             clearButton.isHidden = true
         } else {

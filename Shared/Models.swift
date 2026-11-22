@@ -8,10 +8,10 @@ enum Tone: String, CaseIterable, Codable, Identifiable {
 
     var label: String {
         switch self {
-        case .casual: return "캐주얼"
-        case .sweet: return "다정함"
-        case .polite: return "정중함"
-        case .short: return "짧게"
+        case .casual: return L("캐주얼", "Casual")
+        case .sweet: return L("다정함", "Sweet")
+        case .polite: return L("정중함", "Polite")
+        case .short: return L("짧게", "Short")
         }
     }
 

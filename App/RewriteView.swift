@@ -74,7 +74,7 @@ struct RewriteView: View {
                     .scrollContentBackground(.hidden)
                     .textInputAutocapitalization(.sentences)
                 if vm.input.isEmpty {
-                    Text("영어 또는 한국어 문장을 입력하거나 붙여넣으세요")
+                    Text(L("영어 또는 한국어 문장을 입력하거나 붙여넣으세요", "Type or paste a sentence in English or Korean"))
                         .foregroundStyle(.tertiary)
                         .padding(.top, 8)
                         .padding(.leading, 5)
@@ -85,7 +85,7 @@ struct RewriteView: View {
                 Button {
                     if let s = UIPasteboard.general.string { vm.input = s }
                 } label: {
-                    Label("붙여넣기", systemImage: "doc.on.clipboard")
+                    Label(L("붙여넣기", "Paste"), systemImage: "doc.on.clipboard")
                 }
                 Spacer()
                 Text("\(vm.input.count)/\(AppConfig.maxInputLength)")
@@ -94,8 +94,8 @@ struct RewriteView: View {
             }
             .font(.footnote)
 
-            DisclosureGroup("상대방 메시지 (선택)", isExpanded: $showContext) {
-                TextField("답장하려는 메시지를 넣으면 맥락에 맞게 고쳐요", text: $vm.context, axis: .vertical)
+            DisclosureGroup(L("상대방 메시지 (선택)", "Message you're replying to (optional)"), isExpanded: $showContext) {
+                TextField(L("답장하려는 메시지를 넣으면 맥락에 맞게 고쳐요", "Add the message you're replying to and I'll fit the context"), text: $vm.context, axis: .vertical)
                     .lineLimit(1...4)
                     .textFieldStyle(.roundedBorder)
                     .padding(.top, 4)
@@ -132,7 +132,7 @@ struct RewriteView: View {
         } label: {
             HStack {
                 if vm.isLoading { ProgressView().tint(.white) }
-                Text(vm.isLoading ? "교정 중…" : "자연스럽게 바꾸기")
+                Text(vm.isLoading ? L("교정 중…", "Rewriting…") : L("자연스럽게 바꾸기", "Make it natural"))
                     .fontWeight(.semibold)
             }
             .frame(maxWidth: .infinity)
@@ -161,7 +161,7 @@ struct RewriteView: View {
 
     private func copy(_ text: String) {
         UIPasteboard.general.string = text
-        withAnimation { toast = "복사했어요" }
+        withAnimation { toast = L("복사했어요", "Copied") }
         Task {
             try? await Task.sleep(nanoseconds: 1_400_000_000)
             withAnimation { toast = nil }
@@ -182,18 +182,18 @@ struct ResultCard: View {
 
             HStack(spacing: 10) {
                 Button { copy(result.best) } label: {
-                    Label("복사", systemImage: "doc.on.doc")
+                    Label(L("복사", "Copy"), systemImage: "doc.on.doc")
                 }
                 .buttonStyle(.borderedProminent)
                 ShareLink(item: result.best) {
-                    Label("공유", systemImage: "square.and.arrow.up")
+                    Label(L("공유", "Share"), systemImage: "square.and.arrow.up")
                 }
                 .buttonStyle(.bordered)
             }
 
             if !result.changes.isEmpty {
                 Divider()
-                Text("바뀐 점").font(.headline)
+                Text(L("바뀐 점", "What changed")).font(.headline)
                 ForEach(result.changes) { change in
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
@@ -214,7 +214,7 @@ struct ResultCard: View {
 
             if !result.alternatives.isEmpty {
                 Divider()
-                DisclosureGroup("다른 표현 보기") {
+                DisclosureGroup(L("다른 표현 보기", "Other options")) {
                     VStack(alignment: .leading, spacing: 10) {
                         ForEach(result.alternatives, id: \.self) { alt in
                             Button { copy(alt) } label: {
@@ -226,7 +226,7 @@ struct ResultCard: View {
                             }
                             .buttonStyle(.plain)
                         }
-                        Text("탭하면 복사돼요").font(.caption).foregroundStyle(.tertiary)
+                        Text(L("탭하면 복사돼요", "Tap to copy")).font(.caption).foregroundStyle(.tertiary)
                     }
                     .padding(.top, 6)
                 }

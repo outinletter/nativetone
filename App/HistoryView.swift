@@ -13,18 +13,18 @@ struct HistoryView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                Picker("필터", selection: $favoritesOnly) {
-                    Text("전체").tag(false)
-                    Text("즐겨찾기").tag(true)
+                Picker(L("필터", "Filter"), selection: $favoritesOnly) {
+                    Text(L("전체", "All")).tag(false)
+                    Text(L("즐겨찾기", "Favorites")).tag(true)
                 }
                 .pickerStyle(.segmented)
                 .padding([.horizontal, .top])
 
                 if shown.isEmpty {
                     ContentUnavailableView(
-                        favoritesOnly ? "즐겨찾기가 없어요" : "아직 기록이 없어요",
+                        favoritesOnly ? L("즐겨찾기가 없어요", "No favorites yet") : L("아직 기록이 없어요", "No history yet"),
                         systemImage: favoritesOnly ? "star" : "clock",
-                        description: Text("교정한 문장이 이 기기에만 저장돼요.")
+                        description: Text(L("교정한 문장이 이 기기에만 저장돼요.", "Corrected sentences are stored only on this device."))
                     )
                 } else {
                     List {
@@ -32,7 +32,7 @@ struct HistoryView: View {
                             row(item)
                                 .swipeActions(edge: .trailing) {
                                     Button(role: .destructive) { history.delete([item.id]) } label: {
-                                        Label("삭제", systemImage: "trash")
+                                        Label(L("삭제", "Delete"), systemImage: "trash")
                                     }
                                 }
                         }
@@ -40,10 +40,10 @@ struct HistoryView: View {
                     .listStyle(.plain)
                 }
             }
-            .navigationTitle("기록")
+            .navigationTitle(L("기록", "History"))
             .toolbar {
                 if !history.items.isEmpty {
-                    Button("비우기", role: .destructive) { history.clear() }
+                    Button(L("비우기", "Clear"), role: .destructive) { history.clear() }
                 }
             }
         }
@@ -69,7 +69,7 @@ struct HistoryView: View {
                 Text("\(item.tone.emoji) \(item.tone.label)")
                 Text(item.date, style: .date)
                 Spacer()
-                Text(copiedID == item.id ? "복사됨" : "탭하여 복사")
+                Text(copiedID == item.id ? L("복사됨", "Copied") : L("탭하여 복사", "Tap to copy"))
                     .foregroundStyle(copiedID == item.id ? .green : .secondary)
             }
             .font(.caption)

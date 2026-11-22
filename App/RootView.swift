@@ -7,11 +7,11 @@ struct RootView: View {
     var body: some View {
         TabView {
             RewriteView()
-                .tabItem { Label("교정", systemImage: "wand.and.stars") }
+                .tabItem { Label(L("교정", "Rewrite"), systemImage: "wand.and.stars") }
             HistoryView()
-                .tabItem { Label("기록", systemImage: "clock") }
+                .tabItem { Label(L("기록", "History"), systemImage: "clock") }
             SettingsView()
-                .tabItem { Label("설정", systemImage: "gearshape") }
+                .tabItem { Label(L("설정", "Settings"), systemImage: "gearshape") }
         }
         .environmentObject(history)
         .sheet(isPresented: $showGuide, onDismiss: { AppSettings.hasSeenGuide = true }) {

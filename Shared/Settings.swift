@@ -6,9 +6,9 @@ enum KeyboardHeight: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .compact: return "작게"
-        case .normal: return "보통"
-        case .tall: return "크게"
+        case .compact: return L("작게", "Small")
+        case .normal: return L("보통", "Medium")
+        case .tall: return L("크게", "Large")
         }
     }
     var points: CGFloat {
@@ -18,6 +18,22 @@ enum KeyboardHeight: String, CaseIterable, Identifiable {
         case .tall: return 310
         }
     }
+}
+
+/// Language of the app and keyboard UI (separate from the language used to explain changes).
+enum AppLanguage: String, CaseIterable, Identifiable {
+    case ko, en
+    var id: String { rawValue }
+    var nativeName: String { self == .ko ? "한국어" : "English" }
+}
+
+/// Picks the Korean or English text for the current UI language.
+func L(_ ko: String, _ en: String) -> String {
+    AppSettings.uiLanguage == .ko ? ko : en
+}
+
+extension Notification.Name {
+    static let uiLanguageChanged = Notification.Name("uiLanguageChanged")
 }
 
 enum AppConfig {
@@ -41,9 +57,19 @@ enum AppSettings {
         static let appToken = "appToken"
         static let autoSuggest = "autoSuggest"
         static let hasSeenGuide = "hasSeenGuide"
+        static let uiLanguage = "uiLanguage"
         static let keyboardHeight = "keyboardHeight"
         static let haptics = "haptics"
         static let autoCapitalize = "autoCapitalize"
+    }
+
+    /// Defaults to Korean on Korean devices, English elsewhere.
+    static var uiLanguage: AppLanguage {
+        get {
+            if let raw = defaults.string(forKey: Key.uiLanguage), let v = AppLanguage(rawValue: raw) { return v }
+            return Locale.preferredLanguages.first?.hasPrefix("ko") == true ? .ko : .en
+        }
+        set { defaults.set(newValue.rawValue, forKey: Key.uiLanguage) }
     }
 
     static var keyboardHeight: KeyboardHeight {

@@ -75,11 +75,11 @@ final class SuggestionBarView: UIView {
         switch newState {
         case .idle:
             spinner.stopAnimating()
-            suggestionButton.setTitle(autoMode ? "입력하면 자연스러운 문장이 여기에 떠요" : "문장 교정하기", for: .normal)
+            suggestionButton.setTitle(autoMode ? L("입력하면 자연스러운 문장이 여기에 떠요", "A natural version will appear here as you type") : L("문장 교정하기", "Rewrite sentence"), for: .normal)
             suggestionButton.setTitleColor(.secondaryLabel, for: .normal)
         case .loading:
             spinner.startAnimating()
-            suggestionButton.setTitle("교정 중…", for: .normal)
+            suggestionButton.setTitle(L("교정 중…", "Rewriting…"), for: .normal)
             suggestionButton.setTitleColor(.secondaryLabel, for: .normal)
         case .result(let text):
             spinner.stopAnimating()

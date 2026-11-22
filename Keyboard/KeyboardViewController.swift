@@ -86,6 +86,7 @@ final class KeyboardViewController: UIInputViewController {
         tone = AppSettings.tone
         bar.setTone(tone)
         bar.autoMode = AppSettings.autoSuggest
+        updateBuffer()
         heightConstraint.constant = currentHeight()
         bar.set(.idle)
         updateAutoShift()
@@ -123,17 +124,17 @@ final class KeyboardViewController: UIInputViewController {
                   trimmed.count <= AppConfig.maxInputLength else { return }
         } else {
             guard hasFullAccess else {
-                bar.set(.message("설정에서 '전체 접근 허용'을 켜주세요"))
+                bar.set(.message(L("설정에서 '전체 접근 허용'을 켜주세요", "Turn on 'Allow Full Access' in Settings")))
                 return
             }
             guard !trimmed.isEmpty else {
-                bar.set(.message("교정할 문장을 먼저 입력하세요"))
+                bar.set(.message(L("교정할 문장을 먼저 입력하세요", "Type a sentence first")))
                 return
             }
         }
 
         let selectedTone = tone
-        let cacheKey = "\(selectedTone.rawValue)|\(AppSettings.explainLanguage.rawValue)|\(trimmed)"
+        let cacheKey = "fast|\(selectedTone.rawValue)|\(AppSettings.explainLanguage.rawValue)|\(trimmed)"
         task?.cancel()
         pending = nil
 
@@ -149,7 +150,8 @@ final class KeyboardViewController: UIInputViewController {
                     text: trimmed,
                     tone: selectedTone,
                     context: nil,
-                    explainLanguage: AppSettings.explainLanguage
+                    explainLanguage: AppSettings.explainLanguage,
+                    fast: true
                 )
                 guard let self, !Task.isCancelled else { return }
                 if self.cache.count > 30 { self.cache.removeAll() }
@@ -165,7 +167,7 @@ final class KeyboardViewController: UIInputViewController {
     private func show(_ r: RewriteResult, line: String, trimmed: String) {
         if r.best == trimmed {
             pending = nil
-            bar.set(.ok("자연스러운 문장이에요 ✓"))
+            bar.set(.ok(L("자연스러운 문장이에요 ✓", "Already sounds natural ✓")))
         } else {
             pending = Pending(original: line, result: r)
             bar.set(.result(r.best))
@@ -191,7 +193,7 @@ final class KeyboardViewController: UIInputViewController {
         // Make sure the text hasn't changed since the suggestion was requested.
         guard currentLine() == p.original else {
             pending = nil
-            bar.set(.message("문장이 바뀌었어요. ✨ 를 다시 눌러주세요"))
+            bar.set(.message(L("문장이 바뀌었어요. ✨ 를 다시 눌러주세요", "The text changed. Tap ✨ again")))
             return
         }
         for _ in 0..<p.original.count { textDocumentProxy.deleteBackward() }
@@ -225,7 +227,7 @@ final class KeyboardViewController: UIInputViewController {
     private func scheduleAutoSuggest() {
         autoTimer?.invalidate()
         guard AppSettings.autoSuggest, hasFullAccess else { return }
-        autoTimer = Timer.scheduledTimer(withTimeInterval: 0.9, repeats: false) { [weak self] _ in
+        autoTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
             self?.triggerRewrite(auto: true)
         }
     }
@@ -355,7 +357,7 @@ final class KeyboardViewController: UIInputViewController {
         guard let returnButton else { return }
         var title = "return"
         if language == .korean {
-            if case .result = bar.state { title = "입력" } else { title = "변환" }
+            if case .result = bar.state { title = L("입력", "Insert") } else { title = L("변환", "Convert") }
         }
         returnButton.setTitle(title, for: .normal)
     }
@@ -414,14 +416,13 @@ final class KeyboardViewController: UIInputViewController {
         let row3 = UIStackView(arrangedSubviews: [leftSpecial] + row3Keys + [delete])
         row3.axis = .horizontal; row3.spacing = 5; row3.distribution = .fill
         keysStack.addArrangedSubview(row3) // must be in the hierarchy before cross-view constraints
-        let wide = layer == .letters ? 1.4 : 1.5
-        leftSpecial.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: wide).isActive = true
-        // Delete takes whatever width is left, so row 3 always matches row 1 exactly (no overlap).
-        delete.setContentHuggingPriority(.init(1), for: .horizontal)
+        // Shift/123 and delete always match in width, so row 3 lines up with row 1 like the iOS keyboard.
+        leftSpecial.widthAnchor.constraint(equalTo: delete.widthAnchor).isActive = true
         if layer == .letters {
             row3Keys.forEach { $0.widthAnchor.constraint(equalTo: ref.widthAnchor).isActive = true }
         } else {
-            // Fewer keys: the middle keys share the remaining width equally.
+            leftSpecial.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: 1.5).isActive = true
+            // Punctuation keys share the remaining width equally.
             for k in row3Keys.dropFirst() { k.widthAnchor.constraint(equalTo: row3Keys[0].widthAnchor).isActive = true }
         }
 
