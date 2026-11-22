@@ -8,6 +8,7 @@ final class KeyboardViewController: UIInputViewController {
         let result: RewriteResult
     }
 
+    private static let barHeight: CGFloat = 60
     private let bar = SuggestionBarView()
     private let keysStack = UIStackView()
     private var layer: Layer = .letters
@@ -83,7 +84,7 @@ final class KeyboardViewController: UIInputViewController {
             bar.topAnchor.constraint(equalTo: view.topAnchor),
             bar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            bar.heightAnchor.constraint(equalToConstant: 44),
+            bar.heightAnchor.constraint(equalToConstant: Self.barHeight),
             keysStack.topAnchor.constraint(equalTo: bar.bottomAnchor, constant: 8),
             keysStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 3),
             keysStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -3),
@@ -131,7 +132,8 @@ final class KeyboardViewController: UIInputViewController {
 
     /// Height from the app setting, plus room for the Korean compose bar.
     private func currentHeight() -> CGFloat {
-        AppSettings.keyboardHeight.points + 0
+        // The taller bar is added on top so the keys keep their size.
+        AppSettings.keyboardHeight.points + (Self.barHeight - 44)
     }
 
     // MARK: - Rewrite
