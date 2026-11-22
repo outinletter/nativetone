@@ -4,6 +4,9 @@ struct SettingsView: View {
     @State private var explainLanguage = AppSettings.explainLanguage
     @State private var tone = AppSettings.tone
     @State private var autoSuggest = AppSettings.autoSuggest
+    @State private var keyboardHeight = AppSettings.keyboardHeight
+    @State private var haptics = AppSettings.haptics
+    @State private var autoCapitalize = AppSettings.autoCapitalize
 
     var body: some View {
         NavigationStack {
@@ -20,6 +23,11 @@ struct SettingsView: View {
                 Section {
                     NavigationLink("키보드 설정 방법") { KeyboardGuideView(isSheet: false) }
                     Toggle("입력하면 자동으로 교정", isOn: $autoSuggest)
+                    Picker("키보드 높이", selection: $keyboardHeight) {
+                        ForEach(KeyboardHeight.allCases) { Text($0.label).tag($0) }
+                    }
+                    Toggle("키 입력 진동", isOn: $haptics)
+                    Toggle("문장 시작 자동 대문자", isOn: $autoCapitalize)
                 } header: {
                     Text("키보드")
                 } footer: {
@@ -36,6 +44,9 @@ struct SettingsView: View {
             .onChange(of: explainLanguage) { AppSettings.explainLanguage = $1 }
             .onChange(of: tone) { AppSettings.tone = $1 }
             .onChange(of: autoSuggest) { AppSettings.autoSuggest = $1 }
+            .onChange(of: keyboardHeight) { AppSettings.keyboardHeight = $1 }
+            .onChange(of: haptics) { AppSettings.haptics = $1 }
+            .onChange(of: autoCapitalize) { AppSettings.autoCapitalize = $1 }
         }
     }
 }

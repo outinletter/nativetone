@@ -52,7 +52,7 @@ final class KeyboardViewController: UIInputViewController {
         view.addSubview(bar)
         view.addSubview(keysStack)
 
-        heightConstraint = view.heightAnchor.constraint(equalToConstant: 276)
+        heightConstraint = view.heightAnchor.constraint(equalToConstant: currentHeight())
         heightConstraint.priority = .init(999)
         bufferHeight = bufferBar.heightAnchor.constraint(equalToConstant: 0)
         NSLayoutConstraint.activate([
@@ -86,6 +86,7 @@ final class KeyboardViewController: UIInputViewController {
         tone = AppSettings.tone
         bar.setTone(tone)
         bar.autoMode = AppSettings.autoSuggest
+        heightConstraint.constant = currentHeight()
         bar.set(.idle)
         updateAutoShift()
     }
@@ -93,6 +94,11 @@ final class KeyboardViewController: UIInputViewController {
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
         updateAutoShift()
+    }
+
+    /// Height from the app setting, plus room for the Korean compose bar.
+    private func currentHeight() -> CGFloat {
+        AppSettings.keyboardHeight.points + (language == .korean ? 52 : 0)
     }
 
     // MARK: - Rewrite
@@ -252,9 +258,9 @@ final class KeyboardViewController: UIInputViewController {
     private func updateAutoShift() {
         guard language == .english, layer == .letters, !capsLock else { return }
         let before = textDocumentProxy.documentContextBeforeInput ?? ""
-        let should = before.isEmpty
+        let should = AppSettings.autoCapitalize && (before.isEmpty
             || before.hasSuffix("\n")
-            || before.hasSuffix(". ") || before.hasSuffix("! ") || before.hasSuffix("? ")
+            || before.hasSuffix(". ") || before.hasSuffix("! ") || before.hasSuffix("? "))
         if should != shifted { shifted = should; refreshLetters() }
     }
 
@@ -328,7 +334,7 @@ final class KeyboardViewController: UIInputViewController {
         let korean = language == .korean
         bufferBar.isHidden = !korean
         bufferHeight.constant = korean ? 52 : 0
-        heightConstraint.constant = korean ? 276 + 52 : 276
+        heightConstraint.constant = currentHeight()
         bar.set(.idle)
         updateBuffer()
         rebuildKeys()

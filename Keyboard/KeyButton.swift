@@ -43,7 +43,10 @@ final class KeyButton: UIButton {
             if self.onRepeat == nil { self.onTap?() }
         }, for: .touchUpInside)
 
-        addAction(UIAction { [weak self] _ in self?.beginRepeat() }, for: .touchDown)
+        addAction(UIAction { [weak self] _ in
+            if AppSettings.haptics { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+            self?.beginRepeat()
+        }, for: .touchDown)
         for e: UIControl.Event in [.touchUpInside, .touchUpOutside, .touchCancel] {
             addAction(UIAction { [weak self] _ in self?.endRepeat() }, for: e)
         }

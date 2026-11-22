@@ -1,5 +1,25 @@
 import Foundation
 
+/// Keyboard height preset (points, excluding the Korean compose bar).
+enum KeyboardHeight: String, CaseIterable, Identifiable {
+    case compact, normal, tall
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .compact: return "작게"
+        case .normal: return "보통"
+        case .tall: return "크게"
+        }
+    }
+    var points: CGFloat {
+        switch self {
+        case .compact: return 246
+        case .normal: return 276
+        case .tall: return 310
+        }
+    }
+}
+
 enum AppConfig {
     static let appGroup = "group.com.addvalue.nativetone"
     /// Local dev proxy (see server/). Replace with the deployed proxy URL for release builds.
@@ -21,6 +41,26 @@ enum AppSettings {
         static let appToken = "appToken"
         static let autoSuggest = "autoSuggest"
         static let hasSeenGuide = "hasSeenGuide"
+        static let keyboardHeight = "keyboardHeight"
+        static let haptics = "haptics"
+        static let autoCapitalize = "autoCapitalize"
+    }
+
+    static var keyboardHeight: KeyboardHeight {
+        get { KeyboardHeight(rawValue: defaults.string(forKey: Key.keyboardHeight) ?? "") ?? .normal }
+        set { defaults.set(newValue.rawValue, forKey: Key.keyboardHeight) }
+    }
+
+    /// Keyboard: light tap feedback on each key (default on).
+    static var haptics: Bool {
+        get { defaults.object(forKey: Key.haptics) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Key.haptics) }
+    }
+
+    /// Keyboard: shift automatically at the start of a sentence (default on).
+    static var autoCapitalize: Bool {
+        get { defaults.object(forKey: Key.autoCapitalize) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Key.autoCapitalize) }
     }
 
     static var tone: Tone {
