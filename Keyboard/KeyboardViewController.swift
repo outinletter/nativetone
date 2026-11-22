@@ -16,9 +16,37 @@ final class KeyboardViewController: UIInputViewController {
     private var letterBases: [(button: KeyButton, base: String)] = []
     private var shiftButton: KeyButton?
 
-    private enum Language { case english, korean }
+    private enum Language { case english, korean, japanese, chinese }
     private var language: Language = .english
+    private var availableLanguages: [Language] = []
     private var composer = HangulComposer()
+    private var latin = LatinComposer()
+
+    private var isCompose: Bool { language != .english }
+    private var composeText: String {
+        switch language {
+        case .english: return ""
+        case .korean: return composer.text
+        case .japanese, .chinese: return latin.text
+        }
+    }
+    private var sourceCode: String? {
+        switch language {
+        case .english: return nil
+        case .korean: return "ko"
+        case .japanese: return "ja"
+        case .chinese: return "zh"
+        }
+    }
+    private func composeClear() { composer.clear(); latin.clear() }
+    private func languages() -> [Language] {
+        let on = AppSettings.inputLanguages
+        var list: [Language] = [.english]
+        if on.contains(.korean) { list.append(.korean) }
+        if on.contains(.japanese) { list.append(.japanese) }
+        if on.contains(.chinese) { list.append(.chinese) }
+        return list
+    }
     private let bufferBar = BufferBarView()
     private var heightConstraint: NSLayoutConstraint!
     private var bufferHeight: NSLayoutConstraint!
@@ -86,6 +114,17 @@ final class KeyboardViewController: UIInputViewController {
         tone = AppSettings.tone
         bar.setTone(tone)
         bar.autoMode = AppSettings.autoSuggest
+        let langs = languages()
+        if langs != availableLanguages {
+            availableLanguages = langs
+            if !langs.contains(language) {
+                language = .english
+                composeClear()
+                bufferBar.isHidden = true
+                bufferHeight.constant = 0
+            }
+            rebuildKeys()
+        }
         updateBuffer()
         heightConstraint.constant = currentHeight()
         bar.set(.idle)
@@ -99,7 +138,7 @@ final class KeyboardViewController: UIInputViewController {
 
     /// Height from the app setting, plus room for the Korean compose bar.
     private func currentHeight() -> CGFloat {
-        AppSettings.keyboardHeight.points + (language == .korean ? 52 : 0)
+        AppSettings.keyboardHeight.points + (isCompose ? 40 : 0)
     }
 
     // MARK: - Rewrite
@@ -109,17 +148,20 @@ final class KeyboardViewController: UIInputViewController {
         return before.components(separatedBy: "\n").last ?? ""
     }
 
-    /// `auto` = fired by the typing-pause timer (quiet about empty/short input); otherwise from the ✨ tap.
+    /// `auto` = fired by the typing-pause timer (quiet about empty/short input); otherwise by tapping the bar.
     private func triggerRewrite(auto: Bool = false) {
         autoTimer?.invalidate()
-        let line = language == .korean ? composer.text : currentLine()
+        let line = isCompose ? composeText : currentLine()
         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if auto {
             // Only suggest for something sentence-like, and not for text we already handled.
-            let longEnough = language == .korean
-                ? trimmed.count >= 3
-                : trimmed.split(separator: " ").count >= 3
+            let longEnough: Bool
+            switch language {
+            case .korean, .japanese: longEnough = trimmed.count >= 3
+            case .chinese: longEnough = trimmed.count >= 4
+            case .english: longEnough = trimmed.split(separator: " ").count >= 3
+            }
             guard hasFullAccess, longEnough,
                   trimmed.count <= AppConfig.maxInputLength else { return }
         } else {
@@ -134,7 +176,7 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         let selectedTone = tone
-        let cacheKey = "fast|\(selectedTone.rawValue)|\(AppSettings.explainLanguage.rawValue)|\(trimmed)"
+        let cacheKey = "fast|\(sourceCode ?? "en")|\(selectedTone.rawValue)|\(AppSettings.explainLanguage.rawValue)|\(trimmed)"
         task?.cancel()
         pending = nil
 
@@ -151,7 +193,8 @@ final class KeyboardViewController: UIInputViewController {
                     tone: selectedTone,
                     context: nil,
                     explainLanguage: AppSettings.explainLanguage,
-                    fast: true
+                    fast: true,
+                    source: sourceCode
                 )
                 guard let self, !Task.isCancelled else { return }
                 if self.cache.count > 30 { self.cache.removeAll() }
@@ -167,7 +210,7 @@ final class KeyboardViewController: UIInputViewController {
     private func show(_ r: RewriteResult, line: String, trimmed: String) {
         if r.best == trimmed {
             pending = nil
-            bar.set(.ok(L("자연스러운 문장이에요 ✓", "Already sounds natural ✓")))
+            bar.set(.ok(L("이미 자연스러운 문장이에요", "Already sounds natural")))
         } else {
             pending = Pending(original: line, result: r)
             bar.set(.result(r.best))
@@ -176,15 +219,15 @@ final class KeyboardViewController: UIInputViewController {
 
     private func applySuggestion() {
         guard let p = pending else { return }
-        if language == .korean {
-            // Korean compose buffer -> insert the English result into the host field.
-            guard composer.text == p.original else {
+        if isCompose {
+            // Compose buffer -> insert the English result into the host field.
+            guard composeText == p.original else {
                 pending = nil
                 bar.set(.idle)
                 return
             }
             textDocumentProxy.insertText(p.result.best)
-            composer.clear()
+            composeClear()
             pending = nil
             updateBuffer()
             bar.set(.idle)
@@ -193,7 +236,7 @@ final class KeyboardViewController: UIInputViewController {
         // Make sure the text hasn't changed since the suggestion was requested.
         guard currentLine() == p.original else {
             pending = nil
-            bar.set(.message(L("문장이 바뀌었어요. ✨ 를 다시 눌러주세요", "The text changed. Tap ✨ again")))
+            bar.set(.message(L("문장이 바뀌었어요. 바를 다시 탭하세요", "The text changed. Tap the bar again")))
             return
         }
         for _ in 0..<p.original.count { textDocumentProxy.deleteBackward() }
@@ -236,6 +279,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private func type(_ s: String) {
         if language == .korean { typeKorean(s); return }
+        if language == .japanese || language == .chinese { typeLatin(s); return }
         invalidateSuggestion()
         textDocumentProxy.insertText(s)
         if shifted && !capsLock { shifted = false; refreshLetters() }
@@ -244,9 +288,9 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func backspace() {
-        if language == .korean && !composer.isEmpty {
+        if isCompose && !composeText.isEmpty {
             invalidateSuggestion()
-            composer.backspace()
+            if language == .korean { composer.backspace() } else { latin.backspace() }
             updateBuffer()
             scheduleAutoSuggest()
             return
@@ -294,6 +338,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private func displayTitle(_ base: String) -> String {
         if language == .korean { return shifted ? (Self.shiftedJamo[base] ?? base) : base }
+        if language != .english { return base.lowercased() }
         return shifted ? base.uppercased() : base.lowercased()
     }
 
@@ -314,28 +359,47 @@ final class KeyboardViewController: UIInputViewController {
         scheduleAutoSuggest()
     }
 
+    /// Japanese (romaji) and Chinese (pinyin): letters are composed in the buffer, then converted to English.
+    private func typeLatin(_ s: String) {
+        if latin.isEmpty && !LatinComposer.isLetter(s) {
+            textDocumentProxy.insertText(s)
+            return
+        }
+        invalidateSuggestion()
+        if LatinComposer.isLetter(s), let ch = s.first {
+            latin.input(Character(ch.lowercased()))
+        } else {
+            latin.commitLiteral(s)
+        }
+        if shifted && !capsLock { shifted = false; refreshLetters() }
+        updateBuffer()
+        scheduleAutoSuggest()
+    }
+
     private func updateBuffer() {
-        bufferBar.setText(composer.text)
+        bufferBar.setText(composeText)
     }
 
     private func clearBuffer() {
-        composer.clear()
+        composeClear()
         invalidateSuggestion()
         autoTimer?.invalidate()
         updateBuffer()
     }
 
     private func toggleLanguage() {
-        language = language == .english ? .korean : .english
-        composer.clear()
+        let list = availableLanguages.isEmpty ? languages() : availableLanguages
+        let i = list.firstIndex(of: language) ?? 0
+        language = list[(i + 1) % list.count]
+        latin.japanese = language == .japanese
+        composeClear()
         invalidateSuggestion()
         autoTimer?.invalidate()
         shifted = false
         capsLock = false
         layer = .letters
-        let korean = language == .korean
-        bufferBar.isHidden = !korean
-        bufferHeight.constant = korean ? 52 : 0
+        bufferBar.isHidden = !isCompose
+        bufferHeight.constant = isCompose ? 40 : 0
         heightConstraint.constant = currentHeight()
         bar.set(.idle)
         updateBuffer()
@@ -344,9 +408,9 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func tapReturn() {
-        if language == .korean {
+        if isCompose {
             if case .result = bar.state { applySuggestion(); return }
-            if !composer.isEmpty { triggerRewrite(); return }
+            if !composeText.isEmpty { triggerRewrite(); return }
             textDocumentProxy.insertText("\n")
             return
         }
@@ -356,7 +420,7 @@ final class KeyboardViewController: UIInputViewController {
     private func updateReturnLabel() {
         guard let returnButton else { return }
         var title = "return"
-        if language == .korean {
+        if isCompose {
             if case .result = bar.state { title = L("입력", "Insert") } else { title = L("변환", "Convert") }
         }
         returnButton.setTitle(title, for: .normal)
@@ -427,7 +491,13 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         // Bottom row: [123/ABC] [한/EN] [space] [return]  (iOS draws its own globe below the keyboard)
-        let letterTitle = language == .korean ? "가나다" : "ABC"
+        let letterTitle: String
+        switch language {
+        case .english: letterTitle = "ABC"
+        case .korean: letterTitle = "가나다"
+        case .japanese: letterTitle = "あいう"
+        case .chinese: letterTitle = "拼音"
+        }
         let modeKey = KeyButton(title: layer == .letters ? "123" : letterTitle, style: .special, fontSize: 16)
         modeKey.onTap = { [weak self] in
             guard let self else { return }
@@ -435,20 +505,36 @@ final class KeyboardViewController: UIInputViewController {
             self.rebuildKeys()
             self.updateAutoShift()
         }
-        let langKey = KeyButton(title: language == .english ? "한" : "EN", style: .special, fontSize: 16)
+        let langList = availableLanguages.isEmpty ? languages() : availableLanguages
+        let nextLang = langList[((langList.firstIndex(of: language) ?? 0) + 1) % langList.count]
+        let nextKey: String
+        switch nextLang {
+        case .english: nextKey = "EN"
+        case .korean: nextKey = InputLanguage.korean.keyLabel
+        case .japanese: nextKey = InputLanguage.japanese.keyLabel
+        case .chinese: nextKey = InputLanguage.chinese.keyLabel
+        }
+        let langKey = KeyButton(title: nextKey, style: .special, fontSize: 16)
         langKey.onTap = { [weak self] in self?.toggleLanguage() }
-        let space = KeyButton(title: language == .korean ? "간격" : "space", style: .letter, fontSize: 16)
+        let spaceTitle: String
+        switch language {
+        case .english: spaceTitle = "space"
+        case .korean: spaceTitle = "간격"
+        case .japanese: spaceTitle = "空白"
+        case .chinese: spaceTitle = "空格"
+        }
+        let space = KeyButton(title: spaceTitle, style: .letter, fontSize: 16)
         space.onTap = { [weak self] in self?.type(" ") }
         let ret = KeyButton(title: "return", style: .special, fontSize: 16)
         ret.onTap = { [weak self] in self?.tapReturn() }
         returnButton = ret
         updateReturnLabel()
 
-        let bottom = UIStackView(arrangedSubviews: [modeKey, langKey, space, ret])
+        let bottom = UIStackView(arrangedSubviews: langList.count > 1 ? [modeKey, langKey, space, ret] : [modeKey, space, ret])
         bottom.axis = .horizontal; bottom.spacing = 5; bottom.distribution = .fill
         keysStack.addArrangedSubview(bottom)
         modeKey.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: 1.4).isActive = true
-        langKey.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: 1.2).isActive = true
+        if langList.count > 1 { langKey.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: 1.2).isActive = true }
         ret.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: 2.2).isActive = true
 
         refreshLetters()

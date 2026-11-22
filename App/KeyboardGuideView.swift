@@ -10,7 +10,7 @@ struct KeyboardGuideView: View {
             VStack(alignment: .leading, spacing: 20) {
                 Text(L("어디서든 바로 교정하세요", "Fix your English anywhere"))
                     .font(.title2.bold())
-                Text(L("NativeTone 키보드를 켜면 카카오톡·메시지·WhatsApp 등 모든 앱에서 영어를 쓰다가 ✨ 한 번으로 자연스러운 문장으로 바꿀 수 있어요.", "Turn on the NativeTone keyboard and make your English sound natural in any app — Messages, WhatsApp, KakaoTalk — with one tap on ✨."))
+                Text(L("NativeTone 키보드를 켜면 카카오톡·메시지·WhatsApp 등 모든 앱에서 영어를 쓰다가 한 번의 탭으로 자연스러운 문장으로 바꿀 수 있어요.", "Turn on the NativeTone keyboard and make your English sound natural in any app — Messages, WhatsApp, KakaoTalk — with one tap."))
                     .foregroundStyle(.secondary)
 
                 step(1, L("설정 앱 열기", "Open Settings"), L("아래 버튼으로 NativeTone 설정을 열어요.", "Use the button below to open NativeTone's settings."))
@@ -21,7 +21,7 @@ struct KeyboardGuideView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Label(L("개인정보 안내", "Privacy"), systemImage: "lock.shield")
                         .font(.headline)
-                    Text(L("✨ 를 누른 순간의 현재 문장만 교정을 위해 전송해요. 키 입력은 저장하거나 기록하지 않고, 비밀번호 입력창에서는 키보드가 자동으로 꺼져요.", "Only the current sentence is sent for rewriting. Keystrokes are never stored, and the keyboard turns off automatically in password fields."))
+                    Text(L("교정을 요청한 순간의 현재 문장만 교정을 위해 전송해요. 키 입력은 저장하거나 기록하지 않고, 비밀번호 입력창에서는 키보드가 자동으로 꺼져요.", "Only the current sentence is sent for rewriting. Keystrokes are never stored, and the keyboard turns off automatically in password fields."))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }

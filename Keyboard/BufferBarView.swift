@@ -13,7 +13,7 @@ final class BufferBarView: UIView {
 
         label.numberOfLines = 2
         label.lineBreakMode = .byTruncatingHead
-        label.font = .systemFont(ofSize: 17)
+        label.font = .systemFont(ofSize: 18)
         label.translatesAutoresizingMaskIntoConstraints = false
 
         clearButton.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
@@ -39,7 +39,7 @@ final class BufferBarView: UIView {
 
     func setText(_ text: String) {
         if text.isEmpty {
-            label.text = L("한글로 입력하면 자연스러운 영어로 바꿔요", "Type in Korean and I'll turn it into natural English")
+            label.text = ""
             label.textColor = .tertiaryLabel
             clearButton.isHidden = true
         } else {

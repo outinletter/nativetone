@@ -31,6 +31,7 @@ final class NativeToneClient {
         let explainLanguage: String
         let uiLanguage: String
         let fast: Bool
+        let source: String?
     }
 
     private struct ErrorBody: Decodable { let error: String }
@@ -40,7 +41,8 @@ final class NativeToneClient {
         tone: Tone,
         context: String? = nil,
         explainLanguage: ExplainLanguage,
-        fast: Bool = false
+        fast: Bool = false,
+        source: String? = nil
     ) async throws -> RewriteResult {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw NativeToneError.emptyInput }
@@ -60,7 +62,8 @@ final class NativeToneClient {
             context: (ctx?.isEmpty ?? true) ? nil : ctx,
             explainLanguage: explainLanguage.promptName,
             uiLanguage: AppSettings.uiLanguage.rawValue,
-            fast: fast
+            fast: fast,
+            source: source
         ))
 
         let data: Data

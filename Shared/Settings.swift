@@ -1,5 +1,26 @@
 import Foundation
 
+/// Extra input languages the keyboard can type in (English is always available).
+enum InputLanguage: String, CaseIterable, Identifiable {
+    case korean, japanese, chinese
+    var id: String { rawValue }
+    var nativeName: String {
+        switch self {
+        case .korean: return "한국어"
+        case .japanese: return "日本語"
+        case .chinese: return "中文"
+        }
+    }
+    /// Short label of the key that switches to this language.
+    var keyLabel: String {
+        switch self {
+        case .korean: return "한"
+        case .japanese: return "日"
+        case .chinese: return "中"
+        }
+    }
+}
+
 /// Keyboard height preset (points, excluding the Korean compose bar).
 enum KeyboardHeight: String, CaseIterable, Identifiable {
     case compact, normal, tall
@@ -58,6 +79,7 @@ enum AppSettings {
         static let autoSuggest = "autoSuggest"
         static let hasSeenGuide = "hasSeenGuide"
         static let uiLanguage = "uiLanguage"
+        static let inputLanguages = "inputLanguages"
         static let keyboardHeight = "keyboardHeight"
         static let haptics = "haptics"
         static let autoCapitalize = "autoCapitalize"
@@ -70,6 +92,15 @@ enum AppSettings {
             return Locale.preferredLanguages.first?.hasPrefix("ko") == true ? .ko : .en
         }
         set { defaults.set(newValue.rawValue, forKey: Key.uiLanguage) }
+    }
+
+    /// Enabled extra input languages (Korean only by default).
+    static var inputLanguages: Set<InputLanguage> {
+        get {
+            guard let raw = defaults.array(forKey: Key.inputLanguages) as? [String] else { return [.korean] }
+            return Set(raw.compactMap(InputLanguage.init(rawValue:)))
+        }
+        set { defaults.set(newValue.map(\.rawValue), forKey: Key.inputLanguages) }
     }
 
     static var keyboardHeight: KeyboardHeight {
