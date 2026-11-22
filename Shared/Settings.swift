@@ -3,7 +3,7 @@ import Foundation
 enum AppConfig {
     static let appGroup = "group.com.addvalue.nativetone"
     /// Local dev proxy (see server/). Replace with the deployed proxy URL for release builds.
-    static let defaultBaseURL = "http://localhost:8787"
+    static let defaultBaseURL = "https://nativetone.outinletter.workers.dev"
     static let maxInputLength = 600
 }
 
@@ -33,18 +33,10 @@ enum AppSettings {
         set { defaults.set(newValue.rawValue, forKey: Key.explainLanguage) }
     }
 
-    static var baseURL: String {
-        get {
-            let v = defaults.string(forKey: Key.baseURL) ?? ""
-            return v.isEmpty ? AppConfig.defaultBaseURL : v
-        }
-        set { defaults.set(newValue.trimmingCharacters(in: .whitespacesAndNewlines), forKey: Key.baseURL) }
-    }
+    /// Fixed server address (no user setting); old saved values are ignored.
+    static var baseURL: String { AppConfig.defaultBaseURL }
 
-    static var appToken: String {
-        get { defaults.string(forKey: Key.appToken) ?? "" }
-        set { defaults.set(newValue.trimmingCharacters(in: .whitespacesAndNewlines), forKey: Key.appToken) }
-    }
+    static var appToken: String { "" }
 
     /// Keyboard: suggest a natural rewrite automatically whenever typing pauses (default on).
     static var autoSuggest: Bool {
