@@ -410,7 +410,8 @@ final class KeyboardViewController: UIInputViewController {
         keysStack.addArrangedSubview(row3) // must be in the hierarchy before cross-view constraints
         let wide = layer == .letters ? 1.4 : 1.5
         leftSpecial.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: wide).isActive = true
-        delete.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: wide).isActive = true
+        // Delete takes whatever width is left, so row 3 always matches row 1 exactly (no overlap).
+        delete.setContentHuggingPriority(.init(1), for: .horizontal)
         if layer == .letters {
             row3Keys.forEach { $0.widthAnchor.constraint(equalTo: ref.widthAnchor).isActive = true }
         } else {
@@ -418,7 +419,7 @@ final class KeyboardViewController: UIInputViewController {
             for k in row3Keys.dropFirst() { k.widthAnchor.constraint(equalTo: row3Keys[0].widthAnchor).isActive = true }
         }
 
-        // Bottom row: [123/ABC] [globe] [한/EN] [space] [return]
+        // Bottom row: [123/ABC] [한/EN] [space] [return]  (iOS draws its own globe below the keyboard)
         let letterTitle = language == .korean ? "가나다" : "ABC"
         let modeKey = KeyButton(title: layer == .letters ? "123" : letterTitle, style: .special, fontSize: 16)
         modeKey.onTap = { [weak self] in
@@ -427,8 +428,6 @@ final class KeyboardViewController: UIInputViewController {
             self.rebuildKeys()
             self.updateAutoShift()
         }
-        let globe = KeyButton(symbol: "globe", style: .special)
-        globe.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
         let langKey = KeyButton(title: language == .english ? "한" : "EN", style: .special, fontSize: 16)
         langKey.onTap = { [weak self] in self?.toggleLanguage() }
         let space = KeyButton(title: language == .korean ? "간격" : "space", style: .letter, fontSize: 16)
@@ -438,11 +437,10 @@ final class KeyboardViewController: UIInputViewController {
         returnButton = ret
         updateReturnLabel()
 
-        let bottom = UIStackView(arrangedSubviews: [modeKey, globe, langKey, space, ret])
+        let bottom = UIStackView(arrangedSubviews: [modeKey, langKey, space, ret])
         bottom.axis = .horizontal; bottom.spacing = 5; bottom.distribution = .fill
         keysStack.addArrangedSubview(bottom)
         modeKey.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: 1.4).isActive = true
-        globe.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: 1.2).isActive = true
         langKey.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: 1.2).isActive = true
         ret.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: 2.2).isActive = true
 
