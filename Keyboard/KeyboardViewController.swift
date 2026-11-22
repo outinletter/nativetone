@@ -383,7 +383,10 @@ final class KeyboardViewController: UIInputViewController {
 
         // Row 2: centered, same width as row-1 keys.
         let row2Keys = rows[1].map(makeCharKey)
-        keysStack.addArrangedSubview(centeredRow(row2Keys, ref: ref))
+        let row2 = centeredRow(row2Keys)
+        keysStack.addArrangedSubview(row2)
+        // Constraints across views need a common ancestor, so activate after the row is in the hierarchy.
+        row2Keys.forEach { $0.widthAnchor.constraint(equalTo: ref.widthAnchor).isActive = true }
 
         // Row 3: [special] chars [delete]
         let leftSpecial: KeyButton
@@ -404,6 +407,7 @@ final class KeyboardViewController: UIInputViewController {
         let row3Keys = rows[2].map(makeCharKey)
         let row3 = UIStackView(arrangedSubviews: [leftSpecial] + row3Keys + [delete])
         row3.axis = .horizontal; row3.spacing = 5; row3.distribution = .fill
+        keysStack.addArrangedSubview(row3) // must be in the hierarchy before cross-view constraints
         let wide = layer == .letters ? 1.4 : 1.5
         leftSpecial.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: wide).isActive = true
         delete.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: wide).isActive = true
@@ -413,7 +417,6 @@ final class KeyboardViewController: UIInputViewController {
             // Fewer keys: the middle keys share the remaining width equally.
             for k in row3Keys.dropFirst() { k.widthAnchor.constraint(equalTo: row3Keys[0].widthAnchor).isActive = true }
         }
-        keysStack.addArrangedSubview(row3)
 
         // Bottom row: [123/ABC] [globe] [한/EN] [space] [return]
         let letterTitle = language == .korean ? "가나다" : "ABC"
@@ -437,11 +440,11 @@ final class KeyboardViewController: UIInputViewController {
 
         let bottom = UIStackView(arrangedSubviews: [modeKey, globe, langKey, space, ret])
         bottom.axis = .horizontal; bottom.spacing = 5; bottom.distribution = .fill
+        keysStack.addArrangedSubview(bottom)
         modeKey.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: 1.4).isActive = true
         globe.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: 1.2).isActive = true
         langKey.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: 1.2).isActive = true
         ret.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: 2.2).isActive = true
-        keysStack.addArrangedSubview(bottom)
 
         refreshLetters()
     }
@@ -456,7 +459,7 @@ final class KeyboardViewController: UIInputViewController {
         return b
     }
 
-    private func centeredRow(_ keys: [KeyButton], ref: KeyButton) -> UIView {
+    private func centeredRow(_ keys: [KeyButton]) -> UIView {
         let container = UIView()
         let stack = UIStackView(arrangedSubviews: keys)
         stack.axis = .horizontal; stack.spacing = 5; stack.distribution = .fillEqually
@@ -467,7 +470,6 @@ final class KeyboardViewController: UIInputViewController {
             stack.topAnchor.constraint(equalTo: container.topAnchor),
             stack.bottomAnchor.constraint(equalTo: container.bottomAnchor),
         ])
-        keys.forEach { $0.widthAnchor.constraint(equalTo: ref.widthAnchor).isActive = true }
         return container
     }
 }
