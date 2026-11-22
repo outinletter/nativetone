@@ -68,6 +68,8 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Theme.paper.ignoresSafeArea())
             .navigationTitle(L("설정", "Settings"))
             .onChange(of: explainLanguage) { AppSettings.explainLanguage = $1 }
             .onChange(of: uiLanguage) {

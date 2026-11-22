@@ -377,6 +377,12 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func updateBuffer() {
+        switch language {
+        case .korean: bufferBar.placeholder = "한국어 → English"
+        case .japanese: bufferBar.placeholder = "日本語 → English"
+        case .chinese: bufferBar.placeholder = "中文 → English"
+        case .english: bufferBar.placeholder = ""
+        }
         bufferBar.setText(composeText)
     }
 

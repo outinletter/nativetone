@@ -63,7 +63,8 @@ final class SuggestionBarView: UIView {
         defer { onStateChange?() }
         switch newState {
         case .idle:
-            suggestionButton.setTitle("", for: .normal)
+            suggestionButton.setTitle(L("입력하면 교정 문장이 표시돼요", "Your rewrite appears here"), for: .normal)
+            suggestionButton.setTitleColor(.tertiaryLabel, for: .normal)
         case .loading:
             suggestionButton.setTitle("…", for: .normal)
             suggestionButton.setTitleColor(.secondaryLabel, for: .normal)
