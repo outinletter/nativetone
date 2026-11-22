@@ -227,6 +227,7 @@ final class KeyboardViewController: UIInputViewController {
                 return
             }
             textDocumentProxy.insertText(p.result.best)
+            AppSettings.queueKeyboardResult(p.result.best, tone: tone)
             composeClear()
             pending = nil
             updateBuffer()
@@ -241,6 +242,7 @@ final class KeyboardViewController: UIInputViewController {
         }
         for _ in 0..<p.original.count { textDocumentProxy.deleteBackward() }
         textDocumentProxy.insertText(p.result.best)
+        AppSettings.queueKeyboardResult(p.result.best, tone: tone)
         pending = nil
         bar.set(.idle)
         updateAutoShift()
@@ -377,12 +379,6 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func updateBuffer() {
-        switch language {
-        case .korean: bufferBar.placeholder = "한국어 → English"
-        case .japanese: bufferBar.placeholder = "日本語 → English"
-        case .chinese: bufferBar.placeholder = "中文 → English"
-        case .english: bufferBar.placeholder = ""
-        }
         bufferBar.setText(composeText)
     }
 

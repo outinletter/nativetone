@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @State private var explainLanguage = AppSettings.explainLanguage
     @State private var tone = AppSettings.tone
     @State private var uiLanguage = AppSettings.uiLanguage
     @State private var autoSuggest = AppSettings.autoSuggest
@@ -9,6 +8,7 @@ struct SettingsView: View {
     @State private var haptics = AppSettings.haptics
     @State private var autoCapitalize = AppSettings.autoCapitalize
     @State private var inputLanguages = AppSettings.inputLanguages
+    @State private var saveHistory = AppSettings.saveHistory
 
     var body: some View {
         NavigationStack {
@@ -16,9 +16,6 @@ struct SettingsView: View {
                 Section(L("기본 설정", "General")) {
                     Picker(L("앱 언어", "App language"), selection: $uiLanguage) {
                         ForEach(AppLanguage.allCases) { Text($0.nativeName).tag($0) }
-                    }
-                    Picker(L("설명 언어", "Explanation language"), selection: $explainLanguage) {
-                        ForEach(ExplainLanguage.allCases) { Text($0.nativeName).tag($0) }
                     }
                     Picker(L("기본 톤", "Default tone"), selection: $tone) {
                         ForEach(Tone.allCases) { Text("\($0.emoji) \($0.label)").tag($0) }
@@ -55,6 +52,14 @@ struct SettingsView: View {
                     Text(L("켜두면 3단어 이상 입력하고 잠시 멈출 때 현재 문장이 서버로 전송돼 자연스러운 문장이 키보드 위에 떠요. 끄면 키보드 위 문장 영역을 탭할 때만 전송돼요.", "When on, the current sentence is sent to the server after you type 3+ words and pause, and a natural version appears above the keys. When off, it is sent only when you tap the bar above the keys."))
                 }
 
+                Section {
+                    Toggle(L("기록 저장", "Save history"), isOn: $saveHistory)
+                } header: {
+                    Text(L("기록", "History"))
+                } footer: {
+                    Text(L("변환된 문장만 이 기기에 저장해요. 입력한 원문은 저장하지 않고, 기록 화면에서 왼쪽으로 밀어 삭제할 수 있어요.", "Only the converted sentence is saved, on this device. Your original text is never saved. Swipe left in History to delete."))
+                }
+
                 Section(L("사용법", "How it works")) {
                     Text(L("한국어·일본어·중국어로 입력하면 키보드 안에서 조합되고, 변환하면 자연스러운 영어로 바뀌어 입력돼요.", "Type in Korean, Japanese or Chinese. The text is composed inside the keyboard and, when you convert it, entered as natural English."))
                         .font(.footnote)
@@ -71,7 +76,6 @@ struct SettingsView: View {
             .scrollContentBackground(.hidden)
             .background(Theme.paper.ignoresSafeArea())
             .navigationTitle(L("설정", "Settings"))
-            .onChange(of: explainLanguage) { AppSettings.explainLanguage = $1 }
             .onChange(of: uiLanguage) {
                 AppSettings.uiLanguage = $1
                 NotificationCenter.default.post(name: .uiLanguageChanged, object: nil)
@@ -81,6 +85,7 @@ struct SettingsView: View {
             .onChange(of: keyboardHeight) { AppSettings.keyboardHeight = $1 }
             .onChange(of: haptics) { AppSettings.haptics = $1 }
             .onChange(of: autoCapitalize) { AppSettings.autoCapitalize = $1 }
+            .onChange(of: saveHistory) { AppSettings.saveHistory = $1 }
         }
     }
 }

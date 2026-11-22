@@ -17,6 +17,7 @@ final class SuggestionBarView: UIView {
     var onStateChange: (() -> Void)?
 
     private(set) var state: State = .idle
+    private var tone: Tone = AppSettings.tone
 
     private let suggestionButton = UIButton(type: .system)
     private let toneButton = UIButton(type: .system)
@@ -55,7 +56,9 @@ final class SuggestionBarView: UIView {
     required init?(coder: NSCoder) { fatalError("init(coder:) not used") }
 
     func setTone(_ tone: Tone) {
+        self.tone = tone
         toneButton.setTitle(tone.label, for: .normal)
+        if case .idle = state { set(.idle) }
     }
 
     func set(_ newState: State) {
@@ -63,7 +66,7 @@ final class SuggestionBarView: UIView {
         defer { onStateChange?() }
         switch newState {
         case .idle:
-            suggestionButton.setTitle(L("입력하면 교정 문장이 표시돼요", "Your rewrite appears here"), for: .normal)
+            suggestionButton.setTitle(L("입력하면 \(tone.adjective) 원어민 표현으로 바꿔요", "Type to get a \(tone.adjective) native-speaker version"), for: .normal)
             suggestionButton.setTitleColor(.tertiaryLabel, for: .normal)
         case .loading:
             suggestionButton.setTitle("…", for: .normal)

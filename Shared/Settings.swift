@@ -1,5 +1,11 @@
 import Foundation
 
+struct KeyboardRecord: Codable {
+    let text: String
+    let tone: Tone
+    let date: Date
+}
+
 /// Extra input languages the keyboard can type in (English is always available).
 enum InputLanguage: String, CaseIterable, Identifiable {
     case korean, japanese, chinese
@@ -79,10 +85,34 @@ enum AppSettings {
         static let autoSuggest = "autoSuggest"
         static let hasSeenGuide = "hasSeenGuide"
         static let uiLanguage = "uiLanguage"
+        static let saveHistory = "saveHistory"
+        static let keyboardQueue = "keyboardQueue"
         static let inputLanguages = "inputLanguages"
         static let keyboardHeight = "keyboardHeight"
         static let haptics = "haptics"
         static let autoCapitalize = "autoCapitalize"
+    }
+
+    /// Save converted sentences to the on-device history (default on). Original input is never saved.
+    static var saveHistory: Bool {
+        get { defaults.object(forKey: Key.saveHistory) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Key.saveHistory) }
+    }
+
+    /// Keyboard -> app hand-off: converted sentences applied in the keyboard, imported into history by the app.
+    static func queueKeyboardResult(_ text: String, tone: Tone) {
+        guard saveHistory else { return }
+        var list = (try? JSONDecoder().decode([KeyboardRecord].self, from: defaults.data(forKey: Key.keyboardQueue) ?? Data())) ?? []
+        list.append(KeyboardRecord(text: text, tone: tone, date: Date()))
+        if list.count > 50 { list.removeFirst(list.count - 50) }
+        if let data = try? JSONEncoder().encode(list) { defaults.set(data, forKey: Key.keyboardQueue) }
+    }
+
+    static func takeKeyboardResults() -> [KeyboardRecord] {
+        guard let data = defaults.data(forKey: Key.keyboardQueue),
+              let list = try? JSONDecoder().decode([KeyboardRecord].self, from: data) else { return [] }
+        defaults.removeObject(forKey: Key.keyboardQueue)
+        return list
     }
 
     /// Defaults to Korean on Korean devices, English elsewhere.
@@ -94,10 +124,10 @@ enum AppSettings {
         set { defaults.set(newValue.rawValue, forKey: Key.uiLanguage) }
     }
 
-    /// Enabled extra input languages (Korean only by default).
+    /// Enabled extra input languages (all on by default).
     static var inputLanguages: Set<InputLanguage> {
         get {
-            guard let raw = defaults.array(forKey: Key.inputLanguages) as? [String] else { return [.korean] }
+            guard let raw = defaults.array(forKey: Key.inputLanguages) as? [String] else { return Set(InputLanguage.allCases) }
             return Set(raw.compactMap(InputLanguage.init(rawValue:)))
         }
         set { defaults.set(newValue.map(\.rawValue), forKey: Key.inputLanguages) }
@@ -125,10 +155,8 @@ enum AppSettings {
         set { defaults.set(newValue.rawValue, forKey: Key.tone) }
     }
 
-    static var explainLanguage: ExplainLanguage {
-        get { ExplainLanguage(rawValue: defaults.string(forKey: Key.explainLanguage) ?? "") ?? .ko }
-        set { defaults.set(newValue.rawValue, forKey: Key.explainLanguage) }
-    }
+    /// Explanations follow the app language (no separate setting).
+    static var explainLanguage: ExplainLanguage { uiLanguage == .ko ? .ko : .en }
 
     /// Fixed server address (no user setting); old saved values are ignored.
     static var baseURL: String { AppConfig.defaultBaseURL }

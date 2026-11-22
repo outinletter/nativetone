@@ -3,6 +3,7 @@ import SwiftUI
 struct RootView: View {
     @StateObject private var history = HistoryStore()
     @State private var showGuide = !AppSettings.hasSeenGuide
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         TabView {
@@ -14,6 +15,9 @@ struct RootView: View {
                 .tabItem { Label(L("설정", "Settings"), systemImage: "slider.horizontal.3") }
         }
         .environmentObject(history)
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { history.importKeyboardResults() }
+        }
         .sheet(isPresented: $showGuide, onDismiss: { AppSettings.hasSeenGuide = true }) {
             NavigationStack { KeyboardGuideView(isSheet: true) }
         }

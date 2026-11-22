@@ -58,10 +58,12 @@ struct HistoryView: View {
 
     private func row(_ item: HistoryItem) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(item.original)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+            if !item.original.isEmpty {
+                Text(item.original)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
             HStack(alignment: .top) {
                 Text(item.result.best)
                     .font(Theme.serif(18))

@@ -15,6 +15,16 @@ enum Tone: String, CaseIterable, Codable, Identifiable {
         }
     }
 
+    /// Adjective used in the keyboard hint, e.g. "casual native-speaker version".
+    var adjective: String {
+        switch self {
+        case .casual: return L("캐주얼한", "casual")
+        case .sweet: return L("다정한", "warm")
+        case .polite: return L("정중한", "polite")
+        case .short: return L("짧고 간결한", "concise")
+        }
+    }
+
     var emoji: String {
         switch self {
         case .casual: return "🙂"

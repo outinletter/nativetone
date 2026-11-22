@@ -3,8 +3,6 @@ import UIKit
 /// Shows the Korean text being typed inside the keyboard (SmartBoard-style compose bar).
 final class BufferBarView: UIView {
     var onClear: (() -> Void)?
-    /// Shown while the buffer is empty, e.g. "한국어 → English".
-    var placeholder = ""
 
     private let label = UILabel()
     private let clearButton = UIButton(type: .system)
@@ -41,7 +39,7 @@ final class BufferBarView: UIView {
 
     func setText(_ text: String) {
         if text.isEmpty {
-            label.text = placeholder
+            label.text = ""
             label.textColor = .tertiaryLabel
             clearButton.isHidden = true
         } else {

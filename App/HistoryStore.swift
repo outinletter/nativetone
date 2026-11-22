@@ -16,10 +16,31 @@ final class HistoryStore: ObservableObject {
     private let key = "history.v1"
     private let limit = 200
 
-    init() { load() }
+    init() {
+        load()
+        importKeyboardResults()
+    }
 
+    /// Adds sentences applied in the keyboard (converted text only).
+    func importKeyboardResults() {
+        let records = AppSettings.takeKeyboardResults()
+        guard !records.isEmpty, AppSettings.saveHistory else { return }
+        for r in records.sorted(by: { $0.date < $1.date }) {
+            items.insert(HistoryItem(original: "", result: RewriteResult(best: r.text), tone: r.tone, date: r.date), at: 0)
+        }
+        trim()
+        save()
+    }
+
+    /// Only the converted sentence is stored; the user's original text is not kept.
     func add(original: String, result: RewriteResult, tone: Tone) {
-        items.insert(HistoryItem(original: original, result: result, tone: tone, date: Date()), at: 0)
+        guard AppSettings.saveHistory else { return }
+        items.insert(HistoryItem(original: "", result: RewriteResult(best: result.best), tone: tone, date: Date()), at: 0)
+        trim()
+        save()
+    }
+
+    private func trim() {
         if items.count > limit {
             // Keep favorites even when trimming.
             var kept = 0
@@ -29,7 +50,6 @@ final class HistoryStore: ObservableObject {
                 return kept <= limit
             }
         }
-        save()
     }
 
     func toggleFavorite(_ item: HistoryItem) {
