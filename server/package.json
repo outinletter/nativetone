@@ -1,0 +1,11 @@
+{
+  "name": "nativetone-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "mock": "MOCK=1 node server.mjs"
+  },
+  "engines": { "node": ">=18" }
+}
