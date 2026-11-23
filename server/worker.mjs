@@ -3,10 +3,9 @@
 const MAX_TEXT = 600;
 
 const TONES = {
-  casual: 'Casual and relaxed, like texting a friend. Contractions are fine.',
-  sweet: 'Warm, affectionate and a little playful, like talking to a partner or close friend.',
-  polite: 'Polite and professional, suitable for work email or a first contact. No slang.',
-  short: 'As short as possible while keeping the meaning, suitable for a text message.',
+  casual: 'Casual, relaxed native-speaker style, like texting a friend. Contractions are fine.',
+  academic: 'Professional and academic style: precise, formal register suitable for papers, reports and business writing. No slang; avoid contractions.',
+  slang: 'Native-speaker slang style: informal and idiomatic, with natural current slang and colloquial expressions, the way young native speakers really talk. Keep it understandable and do not force profanity.',
 };
 
 function systemPrompt(language, fast = false, target = 'English') {

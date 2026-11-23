@@ -4,12 +4,24 @@ import Foundation
 /// The buffer is never inserted as-is: it is converted to natural English by the server.
 struct LatinComposer {
     var japanese = false
-    private(set) var raw = ""
+    private(set) var raw = ""          // typed text left of the caret
+    private(set) var suffix = ""       // text right of the caret
 
-    var text: String { japanese ? Romaji.toKana(raw) : raw }
-    var isEmpty: Bool { raw.isEmpty }
+    private var left: String { japanese ? Romaji.toKana(raw) : raw }
+    var text: String { left + suffix }
+    var isEmpty: Bool { raw.isEmpty && suffix.isEmpty }
+    /// Caret position in characters.
+    var caretIndex: Int { left.count }
 
-    mutating func clear() { raw = "" }
+    /// Moves the caret to `index` (in characters of `text`).
+    mutating func moveCaret(to index: Int) {
+        let all = Array(text)
+        let i = max(0, min(index, all.count))
+        raw = String(all[..<i])          // kana / pinyin pass through unchanged when re-read
+        suffix = String(all[i...])
+    }
+
+    mutating func clear() { raw = ""; suffix = "" }
     mutating func input(_ ch: Character) { raw.append(ch) }
     mutating func commitLiteral(_ s: String) { raw += s }
     mutating func backspace() { if !raw.isEmpty { raw.removeLast() } }

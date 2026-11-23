@@ -130,11 +130,25 @@ enum AppSettings {
         static let saveHistory = "saveHistory"
         static let japaneseLayout = "japaneseLayout"
         static let targetLanguage = "targetLanguage"
+        static let composeEnglish = "composeEnglish"
+        static let aiEnabled = "aiEnabled"
         static let keyboardQueue = "keyboardQueue"
         static let inputLanguages = "inputLanguages"
         static let keyboardHeight = "keyboardHeight"
         static let haptics = "haptics"
         static let autoCapitalize = "autoCapitalize"
+    }
+
+    /// Master switch for AI rewriting in the keyboard. Off = a plain keyboard that sends nothing (default on).
+    static var aiEnabled: Bool {
+        get { defaults.object(forKey: Key.aiEnabled) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Key.aiEnabled) }
+    }
+
+    /// English typing also goes through the top bar and is converted live (default on).
+    static var composeEnglish: Bool {
+        get { defaults.object(forKey: Key.composeEnglish) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Key.composeEnglish) }
     }
 
     static var targetLanguage: TargetLanguage {

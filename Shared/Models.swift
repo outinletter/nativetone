@@ -1,36 +1,35 @@
 import Foundation
 
-/// Tone presets shown as chips in the app and cycled in the keyboard.
+/// Style presets cycled in the keyboard and chosen in the app.
 enum Tone: String, CaseIterable, Codable, Identifiable {
-    case casual, sweet, polite, short
+    case casual, academic, slang
 
     var id: String { rawValue }
+
+    /// Older builds stored sweet / polite / short; map them onto the new styles instead of failing to decode.
+    init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        switch raw {
+        case "academic", "polite": self = .academic
+        case "slang": self = .slang
+        default: self = .casual
+        }
+    }
 
     var label: String {
         switch self {
         case .casual: return L("캐주얼", "Casual")
-        case .sweet: return L("다정함", "Sweet")
-        case .polite: return L("정중함", "Polite")
-        case .short: return L("짧게", "Short")
+        case .academic: return L("학술", "Academic")
+        case .slang: return L("슬랭", "Slang")
         }
     }
 
-    /// Adjective used in the keyboard hint, e.g. "casual native-speaker version".
+    /// Adjective used in the keyboard hint, e.g. "casual native English version".
     var adjective: String {
         switch self {
         case .casual: return L("캐주얼한", "casual")
-        case .sweet: return L("다정한", "warm")
-        case .polite: return L("정중한", "polite")
-        case .short: return L("짧고 간결한", "concise")
-        }
-    }
-
-    var emoji: String {
-        switch self {
-        case .casual: return "🙂"
-        case .sweet: return "💗"
-        case .polite: return "🤝"
-        case .short: return "⚡️"
+        case .academic: return L("전문적이고 학술적인", "professional, academic")
+        case .slang: return L("슬랭이 섞인", "slangy")
         }
     }
 

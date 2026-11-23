@@ -16,6 +16,8 @@ struct HangulComposer {
     ]
 
     private(set) var committed = ""
+    /// Text to the right of the caret. Typing and deleting happen at the caret, to the left of this.
+    private(set) var suffix = ""
     private var cho: Character?
     private var jung: Character?
     private var jong: Character?
@@ -34,8 +36,19 @@ struct HangulComposer {
         }
     }
 
-    var text: String { committed + composing }
-    var isEmpty: Bool { committed.isEmpty && cho == nil && jung == nil }
+    var text: String { committed + composing + suffix }
+    var isEmpty: Bool { committed.isEmpty && cho == nil && jung == nil && suffix.isEmpty }
+    /// Caret position in characters.
+    var caretIndex: Int { (committed + composing).count }
+
+    /// Moves the caret to `index` (in characters). The syllable being composed is finished first.
+    mutating func moveCaret(to index: Int) {
+        flush()
+        let all = Array(committed + suffix)
+        let i = max(0, min(index, all.count))
+        committed = String(all[..<i])
+        suffix = String(all[i...])
+    }
 
     static func isJamo(_ s: String) -> Bool {
         guard s.count == 1, let v = s.unicodeScalars.first?.value else { return false }
@@ -44,6 +57,7 @@ struct HangulComposer {
 
     mutating func clear() {
         committed = ""
+        suffix = ""
         cho = nil; jung = nil; jong = nil
     }
 

@@ -15,6 +15,8 @@ struct RootView: View {
     @State private var haptics = AppSettings.haptics
     @State private var autoCapitalize = AppSettings.autoCapitalize
     @State private var saveHistory = AppSettings.saveHistory
+    @State private var composeEnglish = AppSettings.composeEnglish
+    @State private var aiEnabled = AppSettings.aiEnabled
     @State private var targetLanguage = AppSettings.targetLanguage
 
     var body: some View {
@@ -51,6 +53,8 @@ struct RootView: View {
         .onChange(of: haptics) { AppSettings.haptics = $1 }
         .onChange(of: autoCapitalize) { AppSettings.autoCapitalize = $1 }
         .onChange(of: saveHistory) { AppSettings.saveHistory = $1 }
+        .onChange(of: composeEnglish) { AppSettings.composeEnglish = $1 }
+        .onChange(of: aiEnabled) { AppSettings.aiEnabled = $1 }
     }
 
     // MARK: - Sections
@@ -77,6 +81,10 @@ struct RootView: View {
             step(2, L("키보드 추가", "Add the keyboard"), L("키보드 → NativeTone 을 켜세요.", "Go to Keyboards and turn on NativeTone."))
             step(3, L("전체 접근 허용", "Allow Full Access"), L("교정하려면 인터넷 연결이 필요해서 '전체 접근 허용'을 켜야 해요.", "Rewriting needs the internet, so turn on 'Allow Full Access'."))
             step(4, L("키보드 전환", "Switch keyboards"), L("입력창에서 지구본 키를 길게 눌러 NativeTone 을 선택하세요.", "In a text field, press and hold the globe key and choose NativeTone."))
+            step(5, L("음성 입력(마이크)", "Voice input (mic)"),
+                 "한국어: 설정 → 일반 → 키보드 → 키보드 → 새로운 키보드 추가에서 한국어를 추가하고, 받아쓰기 켜기가 켜져 있는지 확인하세요. 그다음 NativeTone의 마이크를 누르세요.\n\n" +
+                 "日本語: 設定 → 一般 → キーボード → キーボード → 新しいキーボードを追加で日本語を追加し、音声入力をオンにしてください。その後、NativeToneのマイクをタップします。\n\n" +
+                 "中文: 设置 → 通用 → 键盘 → 键盘 → 添加新键盘，添加中文键盘，并确认已开启“听写”。然后点击 NativeTone 的麦克风。")
             Button {
                 if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
             } label: {
@@ -123,6 +131,8 @@ struct RootView: View {
             Picker(L("일본어 자판", "Japanese layout"), selection: $japaneseLayout) {
                 ForEach(JapaneseLayout.allCases) { Text($0.label).tag($0) }
             }
+            Toggle(L("AI 교정", "AI rewriting"), isOn: $aiEnabled)
+            Toggle(L("영어도 상단 바에 입력", "Type English in the top bar"), isOn: $composeEnglish)
             Toggle(L("입력하면 자동으로 교정", "Auto-suggest while typing"), isOn: $autoSuggest)
             Picker(L("키보드 높이", "Keyboard height"), selection: $keyboardHeight) {
                 ForEach(KeyboardHeight.allCases) { Text($0.label).tag($0) }

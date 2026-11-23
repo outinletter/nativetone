@@ -2,13 +2,18 @@ import UIKit
 
 enum KeyboardTheme {
     static let background = UIColor { $0.userInterfaceStyle == .dark
-        ? UIColor(white: 0.17, alpha: 1) : UIColor(red: 0.82, green: 0.84, blue: 0.86, alpha: 1) }
+        ? UIColor(red: 0.133, green: 0.137, blue: 0.145, alpha: 1) : UIColor(red: 0.82, green: 0.84, blue: 0.86, alpha: 1) }
     static let letterKey = UIColor { $0.userInterfaceStyle == .dark
         ? UIColor(white: 0.42, alpha: 1) : .white }
     static let specialKey = UIColor { $0.userInterfaceStyle == .dark
         ? UIColor(white: 0.27, alpha: 1) : UIColor(red: 0.67, green: 0.70, blue: 0.74, alpha: 1) }
+    /// The top strip carries the brand colour: ink navy (dark) / ivory (light), with a gold accent.
     static let bar = UIColor { $0.userInterfaceStyle == .dark
-        ? UIColor(white: 0.12, alpha: 1) : UIColor(white: 0.95, alpha: 1) }
+        ? UIColor(red: 0.07, green: 0.12, blue: 0.22, alpha: 1) : UIColor(red: 0.95, green: 0.92, blue: 0.85, alpha: 1) }
+    static let accent = UIColor { $0.userInterfaceStyle == .dark
+        ? UIColor(red: 0.79, green: 0.66, blue: 0.42, alpha: 1) : UIColor(red: 0.60, green: 0.48, blue: 0.25, alpha: 1) }
+    static let onAccent = UIColor { $0.userInterfaceStyle == .dark
+        ? UIColor(red: 0.04, green: 0.08, blue: 0.15, alpha: 1) : .white }
 }
 
 final class KeyButton: UIButton {
@@ -83,6 +88,19 @@ final class KeyButton: UIButton {
         addSubview(l)
         layer.zPosition = 10
         popup = l
+    }
+
+    private var savedTitle: String?
+
+    /// Shows arrows on the space bar while its cursor-slide mode is active.
+    func setCursorMode(_ on: Bool) {
+        if on {
+            savedTitle = title(for: .normal)
+            setTitle("◂   ▸", for: .normal)
+        } else if let t = savedTitle {
+            setTitle(t, for: .normal)
+            savedTitle = nil
+        }
     }
 
     private func hidePopup() {
