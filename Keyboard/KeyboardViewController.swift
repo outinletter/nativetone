@@ -73,6 +73,7 @@ final class KeyboardViewController: UIInputViewController {
     private var liveText = ""          // translation currently placed in the host field
     private var liveSource = ""        // compose text it was made from
     private var commitAfterResult = false
+    private var composeResult: String?   // converted text waiting for the send button
     private var pending: Pending?
     private var task: Task<Void, Never>?
     private var autoTimer: Timer?
@@ -114,6 +115,7 @@ final class KeyboardViewController: UIInputViewController {
         bar.onToneTap = { [weak self] in self?.cycleTone() }
         bar.onAIToggle = { [weak self] in self?.toggleAI() }
         bar.onClear = { [weak self] in self?.clearAll() }
+        bar.onSend = { [weak self] in self?.deliver() }
         bar.onCaretTap = { [weak self] in self?.moveCaret(to: $0) }
         bar.onStateChange = { [weak self] in self?.updateReturnLabel() }
 
@@ -330,25 +332,51 @@ final class KeyboardViewController: UIInputViewController {
     /// Keeps the translation in the field and clears the compose buffer.
     private func commitLive() {
         if liveText.isEmpty && !composeText.isEmpty {
-            ownInsert(composeText)   // nothing converted yet: keep what was typed
+            if aiOn, let r = composeResult, liveSource == composeText {
+                ownInsert(r)
+                AppSettings.queueKeyboardResult(r, tone: tone)
+            } else {
+                ownInsert(composeText)   // nothing converted yet: keep what was typed
+            }
         } else if aiOn && !liveText.isEmpty {
             AppSettings.queueKeyboardResult(liveText, tone: tone)
         }
         liveText = ""
         liveSource = ""
+        composeResult = nil
         commitAfterResult = false
         composeClear()
         updateBuffer()
     }
 
+    /// Send button / return: puts the converted text into the host field (converting first if needed).
+    private func deliver() {
+        guard aiOn, !composeText.isEmpty else { return }
+        if let r = composeResult, liveSource == composeText {
+            ownInsert(r)
+            AppSettings.queueKeyboardResult(r, tone: tone)
+            liveSource = ""
+            composeResult = nil
+            commitAfterResult = false
+            composeClear()
+            bar.set(.idle)
+            updateBuffer()
+            updateAutoShift()
+        } else {
+            commitAfterResult = true
+            triggerRewrite()
+        }
+    }
+
     private func show(_ r: RewriteResult, line: String, trimmed: String) {
         if isCompose {
             guard composeText == line else { return } // typed more while the request was in flight
-            replaceLive(with: r.best)
-            liveSource = line
             pending = nil
-            bar.set(.idle)
-            if commitAfterResult { commitLive() }
+            liveSource = line
+            if !aiOn { return }
+            composeResult = r.best
+            bar.set(.result(r.best))
+            if commitAfterResult { deliver() }
             return
         }
         if r.best == trimmed {
@@ -393,6 +421,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private func invalidateSuggestion() {
         task?.cancel()
+        composeResult = nil
         commitAfterResult = false
         if pending != nil { pending = nil }
         switch bar.state {
@@ -449,7 +478,8 @@ final class KeyboardViewController: UIInputViewController {
 
     private func updateAutoShift() {
         guard language == .english, layer == .letters, !capsLock else { return }
-        let before = textDocumentProxy.documentContextBeforeInput ?? ""
+        // While composing, the text being typed lives in the top bar, not in the host field.
+        let before = (isCompose && aiOn && !composeText.isEmpty) ? composeText : (textDocumentProxy.documentContextBeforeInput ?? "")
         let should = AppSettings.autoCapitalize && (before.isEmpty
             || before.hasSuffix("\n")
             || before.hasSuffix(". ") || before.hasSuffix("! ") || before.hasSuffix("? "))
@@ -582,11 +612,8 @@ final class KeyboardViewController: UIInputViewController {
             } else if !aiOn {
                 commitLive()
                 ownInsert("\n")
-            } else if liveSource == composeText && !liveText.isEmpty {
-                commitLive()                 // translation already in the field: just accept it
             } else {
-                commitAfterResult = true     // convert now, then accept
-                triggerRewrite()
+                deliver()
             }
             return
         }

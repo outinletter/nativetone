@@ -18,6 +18,7 @@ final class SuggestionBarView: UIView {
     var onToneTap: (() -> Void)?
     var onAIToggle: (() -> Void)?
     var onClear: (() -> Void)?
+    var onSend: (() -> Void)?
     /// Called with the character index the user tapped while composing.
     var onCaretTap: ((Int) -> Void)?
     var onStateChange: (() -> Void)?
@@ -29,6 +30,7 @@ final class SuggestionBarView: UIView {
     private let aiButton = UIButton(type: .custom)
     private let toneButton = UIButton(type: .system)
     private let clearButton = UIButton(type: .system)
+    private let sendButton = UIButton(type: .system)
 
     private var shownKey = ""
 
@@ -69,6 +71,13 @@ final class SuggestionBarView: UIView {
             self?.onClear?()
         }, for: .touchUpInside)
 
+        sendButton.setImage(UIImage(systemName: "arrow.up.circle.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 26)), for: .normal)
+        sendButton.tintColor = KeyboardTheme.accent
+        sendButton.addAction(UIAction { [weak self] _ in
+            if AppSettings.haptics { UIImpactFeedbackGenerator(style: .medium).impactOccurred() }
+            self?.onSend?()
+        }, for: .touchUpInside)
+
         let aiWrap = UIView()
         aiButton.translatesAutoresizingMaskIntoConstraints = false
         aiWrap.addSubview(aiButton)
@@ -80,7 +89,7 @@ final class SuggestionBarView: UIView {
             aiWrap.widthAnchor.constraint(equalToConstant: 38),
         ])
 
-        let stack = UIStackView(arrangedSubviews: [label, clearButton, aiWrap, toneButton])
+        let stack = UIStackView(arrangedSubviews: [toneButton, label, clearButton, aiWrap, sendButton])
         stack.axis = .horizontal
         stack.alignment = .fill
         stack.spacing = 4
@@ -88,12 +97,13 @@ final class SuggestionBarView: UIView {
         addSubview(stack)
 
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
-            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -2),
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6),
             stack.topAnchor.constraint(equalTo: topAnchor, constant: overhang),
             stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
-            toneButton.widthAnchor.constraint(equalToConstant: 44),
+            toneButton.widthAnchor.constraint(equalToConstant: 36),
             clearButton.widthAnchor.constraint(equalToConstant: 32),
+            sendButton.widthAnchor.constraint(equalToConstant: 36),
         ])
         toneButton.setContentCompressionResistancePriority(.required, for: .horizontal)
         let rule = UIView()
@@ -107,6 +117,7 @@ final class SuggestionBarView: UIView {
             rule.heightAnchor.constraint(equalToConstant: 1),
         ])
         applyAIAppearance()
+        updateSendButton()
         set(.idle)
     }
 
@@ -130,6 +141,14 @@ final class SuggestionBarView: UIView {
         }
     }
 
+    /// Always visible while AI is on; dimmed when there is nothing to send.
+    private func updateSendButton() {
+        sendButton.isHidden = !aiEnabled
+        let ready = !composing.isEmpty
+        sendButton.alpha = ready ? 1 : 0.35
+        sendButton.isEnabled = ready
+    }
+
     private func applyAIAppearance() {
         UIView.performWithoutAnimation {
             if aiEnabled {
@@ -144,6 +163,7 @@ final class SuggestionBarView: UIView {
                 toneButton.alpha = 0.35
             }
             toneButton.isUserInteractionEnabled = aiEnabled
+            updateSendButton()
         }
     }
 
@@ -156,7 +176,7 @@ final class SuggestionBarView: UIView {
             case .academic: symbol = "graduationcap"
             case .slang: symbol = "bubble.left.and.text.bubble.right"
             }
-            toneButton.setImage(UIImage(systemName: symbol, withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)), for: .normal)
+            toneButton.setImage(UIImage(systemName: symbol, withConfiguration: UIImage.SymbolConfiguration(pointSize: 15, weight: .medium)), for: .normal)
             toneButton.accessibilityLabel = tone.label
             toneButton.layoutIfNeeded()
         }
@@ -174,6 +194,7 @@ final class SuggestionBarView: UIView {
         composing = text
         self.caret = max(0, min(caret, text.count))
         clearButton.isHidden = !(aiEnabled && !text.isEmpty)
+        updateSendButton()
         render()
     }
 
@@ -205,7 +226,8 @@ final class SuggestionBarView: UIView {
     private static let composeFont = UIFont.systemFont(ofSize: 18)
     private static let caretWidth: CGFloat = 2
 
-    private var showsComposing: Bool { aiEnabled && !composing.isEmpty && !statusIsMessage }
+    private var showsResult: Bool { if case .result = state { return !composing.isEmpty }; return false }
+    private var showsComposing: Bool { aiEnabled && !composing.isEmpty && !statusIsMessage && !showsResult }
 
     private func render() {
         let attributed: NSAttributedString
@@ -288,6 +310,7 @@ final class SuggestionBarView: UIView {
 
     @objc private func labelTapped(_ g: UITapGestureRecognizer) {
         guard aiEnabled else { return }
+        if showsResult { onCaretTap?(composing.count); return }   // back to the typed text
         if showsComposing {
             onCaretTap?(characterIndex(atX: g.location(in: label).x))
             return
