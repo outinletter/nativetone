@@ -1,9 +1,9 @@
 import UIKit
 
-/// One-line strip above the keys: [typed text / suggestion] [AI] [style].
-/// The text is a plain UILabel (not a system button) so updating it on every keystroke never cross-fades or flickers.
-/// While composing, the caret is drawn in the text and tapping the text moves it.
-final class SuggestionBarView: UIView {
+/// Two-row strip above the keys. Top row: [style] [converted suggestion] [undo] [AI] [apply].
+/// Bottom row: the text typed in the host field, with a caret; tapping it moves the cursor.
+/// Both rows are plain UILabels (not system buttons) so updating them on every keystroke never cross-fades or flickers.
+final class SuggestionBarView: UIView, UIGestureRecognizerDelegate {
     enum State {
         case idle
         case loading
@@ -18,6 +18,11 @@ final class SuggestionBarView: UIView {
     var onToneTap: (() -> Void)?
     var onAIToggle: (() -> Void)?
     var onUndo: (() -> Void)?
+    /// Double tap on the typed text: select the word at that index. Triple tap: select everything.
+    var onWordSelect: ((Int) -> Void)?
+    var onSelectAll: (() -> Void)?
+    /// Clears the whole typed sentence (the x icon at the left of the input row, always shown).
+    var onClear: (() -> Void)?
     /// Long press on the bar: paste the clipboard into the field.
     var onPaste: (() -> Void)?
     /// True when the field is empty and the clipboard has text: the idle hint offers to paste it.
@@ -31,16 +36,21 @@ final class SuggestionBarView: UIView {
     private(set) var state: State = .idle
     private var tone: Tone = AppSettings.tone
 
-    private let label = UILabel()
+    private let label = UILabel()          // top row: suggestion / hints
+    private let topScroll = UIScrollView() // lets a long suggestion slide sideways
+    private let typedLabel = UILabel()     // bottom row: typed text with caret
     private let aiButton = UIButton(type: .custom)
     private let toneButton = UIButton(type: .system)
     private let undoButton = UIButton(type: .system)
     private let undoSlot = UIView()
     private let applyButton = UIButton(type: .system)
     private let applySlot = UIView()
+    private let clearButton = UIButton(type: .system)
     private static let circle: CGFloat = 30
+    static let rowHeight: CGFloat = 34
 
     private var shownKey = ""
+    private var shownTypedKey = ""
 
     /// Extra height the bar extends above the keyboard view to cover the system's top padding.
     private let overhang: CGFloat
@@ -53,10 +63,40 @@ final class SuggestionBarView: UIView {
         label.numberOfLines = 1
         label.isUserInteractionEnabled = true
         label.lineBreakMode = .byClipping
-        label.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(labelTapped(_:))))
-        label.addGestureRecognizer(UILongPressGestureRecognizer(target: self, action: #selector(labelLongPressed(_:))))
+        topScroll.showsHorizontalScrollIndicator = false
+        topScroll.contentInset.right = 8
+        topScroll.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(labelTapped(_:))))
+        topScroll.addGestureRecognizer(UILongPressGestureRecognizer(target: self, action: #selector(labelLongPressed(_:))))
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.lineBreakMode = .byClipping
+        topScroll.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: topScroll.contentLayoutGuide.leadingAnchor),
+            label.trailingAnchor.constraint(equalTo: topScroll.contentLayoutGuide.trailingAnchor),
+            label.topAnchor.constraint(equalTo: topScroll.contentLayoutGuide.topAnchor),
+            label.bottomAnchor.constraint(equalTo: topScroll.contentLayoutGuide.bottomAnchor),
+            label.heightAnchor.constraint(equalTo: topScroll.frameLayoutGuide.heightAnchor),
+            label.widthAnchor.constraint(greaterThanOrEqualTo: topScroll.frameLayoutGuide.widthAnchor, constant: -8),
+        ])
+        typedLabel.numberOfLines = 1
+        typedLabel.isUserInteractionEnabled = true
+        typedLabel.lineBreakMode = .byClipping
+        typedLabel.translatesAutoresizingMaskIntoConstraints = false
+        typedLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(typedTapped(_:))))
+        let slide = UILongPressGestureRecognizer(target: self, action: #selector(typedPressed(_:)))
+        slide.minimumPressDuration = 0.25
+        slide.allowableMovement = 10_000
+        typedLabel.addGestureRecognizer(slide)
+        let double = UITapGestureRecognizer(target: self, action: #selector(typedDoubleTapped(_:)))
+        double.numberOfTapsRequired = 2
+        let triple = UITapGestureRecognizer(target: self, action: #selector(typedTripleTapped(_:)))
+        triple.numberOfTapsRequired = 3
+        for g in [double, triple] { g.delegate = self; typedLabel.addGestureRecognizer(g) }
+        typedLabel.gestureRecognizers?.compactMap { $0 as? UITapGestureRecognizer }.forEach { $0.delegate = self }
         label.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        label.setContentCompressionResistancePriority(.required, for: .horizontal)
+        topScroll.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        topScroll.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
         // Style icon (left) plus round undo and AI buttons (right), all in 30pt slots.
         let d = Self.circle
@@ -101,18 +141,36 @@ final class SuggestionBarView: UIView {
         Self.fill(undoSlot, with: undoButton)
         let aiSlot = Self.slot(aiButton)
 
-        let stack = UIStackView(arrangedSubviews: [toneSlot, label, undoSlot, aiSlot, applySlot])
+        let stack = UIStackView(arrangedSubviews: [toneSlot, topScroll, undoSlot, aiSlot, applySlot])
         stack.axis = .horizontal
         stack.alignment = .fill
         stack.spacing = 8
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
 
+        addSubview(typedLabel)
+        clearButton.setImage(UIImage(systemName: "xmark.circle.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 17, weight: .regular, scale: .medium)), for: .normal)
+        clearButton.tintColor = UIColor.systemGray      // the standard grey clear button
+        clearButton.translatesAutoresizingMaskIntoConstraints = false
+        clearButton.addAction(UIAction { [weak self] _ in
+            Haptics.tap()
+            self?.onClear?()
+        }, for: .touchUpInside)
+        addSubview(clearButton)
+        updateClearButton()
         NSLayoutConstraint.activate([
             stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
             stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
             stack.topAnchor.constraint(equalTo: topAnchor, constant: overhang),
-            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
+            stack.heightAnchor.constraint(equalToConstant: Self.rowHeight),
+            typedLabel.topAnchor.constraint(equalTo: stack.bottomAnchor),
+            typedLabel.leadingAnchor.constraint(equalTo: topScroll.leadingAnchor),
+            typedLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
+            typedLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
+            clearButton.centerXAnchor.constraint(equalTo: toneSlot.centerXAnchor),
+            clearButton.centerYAnchor.constraint(equalTo: typedLabel.centerYAnchor),
+            clearButton.widthAnchor.constraint(equalToConstant: Self.circle),
+            clearButton.heightAnchor.constraint(equalToConstant: Self.circle),
         ])
         let rule = UIView()
         rule.backgroundColor = KeyboardTheme.accent.withAlphaComponent(0.6)
@@ -151,9 +209,13 @@ final class SuggestionBarView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         // The visible window depends on the label width, which is only known after layout.
-        if label.bounds.width != lastWidth { lastWidth = label.bounds.width; shownKey = ""; render() }
+        if typedLabel.bounds.width != lastWidth || topScroll.bounds.width != lastTopWidth {
+            lastWidth = typedLabel.bounds.width; lastTopWidth = topScroll.bounds.width
+            shownKey = ""; shownTypedKey = ""; render()
+        }
     }
     private var lastWidth: CGFloat = 0
+    private var lastTopWidth: CGFloat = 0
 
     // MARK: - AI switch
 
@@ -188,7 +250,16 @@ final class SuggestionBarView: UIView {
     }
 
     /// Always shown at the far right while AI is on; lit only when a suggestion is ready to apply.
+    /// Always shown while AI is on; dimmed and inactive when there is nothing to clear.
+    private func updateClearButton() {
+        clearButton.isHidden = !aiEnabled
+        let ready = !composing.isEmpty
+        clearButton.isEnabled = ready
+        clearButton.alpha = ready ? 1 : 0.35
+    }
+
     private func updateApplyButton() {
+        updateClearButton()
         applySlot.isHidden = !aiEnabled
         var ready = false
         if case .result = state { ready = true }
@@ -238,13 +309,21 @@ final class SuggestionBarView: UIView {
     // MARK: - Composing text and caret
 
     private(set) var composing = ""
+    private var selection: Range<Int>?
     private var caret = 0
     private var windowStart = 0
+
+    /// Highlights the selected characters of the typed text (nil clears it).
+    func setSelection(_ r: Range<Int>?) {
+        selection = r
+        render()
+    }
 
     /// Text being composed (Korean / Japanese / Chinese / English) and the caret position inside it.
     func setComposing(_ text: String, caret: Int) {
         composing = text
         self.caret = max(0, min(caret, text.count))
+        updateClearButton()
         render()
     }
 
@@ -259,13 +338,8 @@ final class SuggestionBarView: UIView {
         switch newState {
         case .idle:
             let target = AppSettings.targetLanguage.hintName
-            if canPaste {
-                statusText = L("탭하여 붙여넣고 \(target)로 변환", "Tap to paste and convert to \(target)")
-                statusColor = .secondaryLabel
-            } else {
-                statusText = L("입력하면 \(tone.adjective) \(target) 원어민 표현으로 바꿔요", "Type to get a \(tone.adjective) native \(target) version")
-                statusColor = .tertiaryLabel
-            }
+            statusText = L("입력하면 \(tone.adjective) \(target) 원어민 표현으로 바꿔요", "Type to get a \(tone.adjective) native \(target) version")
+            statusColor = .tertiaryLabel
         case .loading:
             statusText = "…"; statusColor = .secondaryLabel
         case .result(let text):
@@ -282,43 +356,77 @@ final class SuggestionBarView: UIView {
     private static let composeFont = UIFont.systemFont(ofSize: 16)
     private static let caretWidth: CGFloat = 2
 
-    private var showsResult: Bool { if case .result = state { return !composing.isEmpty }; return false }
-    private var showsComposing: Bool { aiEnabled && !composing.isEmpty && !statusIsMessage && !showsResult }
-
     private func render() {
+        renderTop()
+        renderTyped()
+    }
+
+    /// Top row: suggestion (gold), hint, loading dots or a notice.
+    private func renderTop() {
         let attributed: NSAttributedString
-        var key: String
+        let key: String
         if !aiEnabled {
             attributed = NSAttributedString(string: "")
             key = "off"
-        } else if showsComposing {
-            // Slide the visible window so the caret always stays in view.
+        } else {
+            var isResult = false
+            if case .result = state { isResult = true }
+            var text = statusText
+            if case .idle = state, !composing.isEmpty { text = "" }   // typed text is below; nothing to hint at
+            attributed = NSAttributedString(string: text, attributes: [.font: isResult ? Self.composeFont : UIFont.systemFont(ofSize: 15), .foregroundColor: statusColor])
+            key = "s|\(text)|\(statusColor.hash)"
+        }
+        if key == shownKey { return }
+        shownKey = key
+        UIView.performWithoutAnimation {
+            label.attributedText = attributed
+            topScroll.setContentOffset(CGPoint(x: -topScroll.contentInset.left, y: 0), animated: false)
+            topScroll.layoutIfNeeded()
+        }
+    }
+
+    /// Bottom row: the typed text with a caret, scrolled so the caret stays in view.
+    private func renderTyped() {
+        let attributed: NSAttributedString
+        let key: String
+        if !aiEnabled {
+            attributed = NSAttributedString(string: "")
+            key = "off"
+        } else if composing.isEmpty {
+            let text = canPaste ? L("탭하여 붙여넣고 변환", "Tap to paste and convert") : ""
+            attributed = NSAttributedString(string: text, attributes: [.font: Self.composeFont, .foregroundColor: UIColor.secondaryLabel])
+            key = "p|\(text)"
+        } else {
             windowStart = min(windowStart, caret)
             let chars = Array(composing)
-            let avail = max(label.bounds.width, 60) - 22
+            let avail = max(typedLabel.bounds.width, 60) - 22
             while windowStart < caret, leftWidth(chars, from: windowStart, to: caret, ellipsis: true) > avail { windowStart += 1 }
             while windowStart > 0, leftWidth(chars, from: windowStart - 1, to: caret, ellipsis: windowStart - 1 > 0) <= avail { windowStart -= 1 }
 
             let out = NSMutableAttributedString()
             let attrs: [NSAttributedString.Key: Any] = [.font: Self.composeFont, .foregroundColor: UIColor.label]
+            let marked: [NSAttributedString.Key: Any] = attrs.merging([.backgroundColor: KeyboardTheme.accent.withAlphaComponent(0.4)]) { $1 }
+            /// Characters [from, to) with the selected ones highlighted.
+            func run(_ from: Int, _ to: Int) -> NSAttributedString {
+                let r = NSMutableAttributedString()
+                for i in from..<to {
+                    let on = selection.map { $0.contains(i) } ?? false
+                    r.append(NSAttributedString(string: String(chars[i]), attributes: on ? marked : attrs))
+                }
+                return r
+            }
             if windowStart > 0 { out.append(NSAttributedString(string: "…", attributes: attrs)) }
-            out.append(NSAttributedString(string: String(chars[windowStart..<caret]), attributes: attrs))
+            out.append(run(windowStart, caret))
             out.append(caretAttachment())
-            out.append(NSAttributedString(string: String(chars[caret...]), attributes: attrs))
+            out.append(run(caret, chars.count))
             attributed = out
-            key = "c|\(composing)|\(caret)|\(windowStart)"
-        } else {
-            var isResult = false
-            if case .result = state { isResult = true }
-            attributed = NSAttributedString(string: statusText, attributes: [.font: isResult ? Self.composeFont : UIFont.systemFont(ofSize: 15), .foregroundColor: statusColor])
-            key = "s|\(statusText)|\(statusColor.hash)"
+            key = "c|\(composing)|\(caret)|\(windowStart)|\(selection.map { "\($0.lowerBound)-\($0.upperBound)" } ?? "")"
         }
-        if key == shownKey { return }
-        shownKey = key
+        if key == shownTypedKey { return }
+        shownTypedKey = key
         UIView.performWithoutAnimation {
-            label.lineBreakMode = showsComposing ? .byClipping : .byTruncatingTail
-            label.attributedText = attributed
-            label.layoutIfNeeded()
+            typedLabel.attributedText = attributed
+            typedLabel.layoutIfNeeded()
         }
     }
 
@@ -371,17 +479,64 @@ final class SuggestionBarView: UIView {
         onPaste?()
     }
 
+    /// Top row: tapping a long suggestion slides it so all of it can be read; the arrow button applies it.
     @objc private func labelTapped(_ g: UITapGestureRecognizer) {
         guard aiEnabled else { return }
-        if showsResult { onApply?(); return }   // tapping the suggestion applies it, same as the arrow button
-        if showsComposing {
-            onCaretTap?(characterIndex(atX: g.location(in: label).x))
-            return
-        }
         switch state {
-        case .result: onApply?()
+        case .result: slideSuggestion()
         case .idle, .message: onTrigger?()
         case .loading, .ok: break
         }
+    }
+
+    /// A suggestion longer than the row slides to its end on tap (and back on the next tap); it can also be dragged.
+    private func slideSuggestion() {
+        topScroll.layoutIfNeeded()
+        let maxX = topScroll.contentSize.width - topScroll.bounds.width + topScroll.contentInset.right
+        guard maxX > 4 else { return }
+        let target: CGFloat = topScroll.contentOffset.x < maxX / 2 ? maxX : 0
+        let seconds = min(max(Double(abs(target - topScroll.contentOffset.x)) / 90, 0.6), 4)
+        UIView.animate(withDuration: seconds, delay: 0, options: [.curveEaseInOut, .allowUserInteraction]) {
+            self.topScroll.contentOffset = CGPoint(x: target, y: 0)
+        }
+    }
+
+    // The single, double and triple taps all fire in turn, like the system keyboard's tap counts.
+    func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+        g is UITapGestureRecognizer && other is UITapGestureRecognizer
+    }
+
+    @objc private func typedDoubleTapped(_ g: UITapGestureRecognizer) {
+        guard aiEnabled, !composing.isEmpty else { return }
+        onWordSelect?(characterIndex(atX: g.location(in: typedLabel).x))
+    }
+
+    @objc private func typedTripleTapped(_ g: UITapGestureRecognizer) {
+        guard aiEnabled, !composing.isEmpty else { return }
+        onSelectAll?()
+    }
+
+    /// Bottom row: press and hold, then slide left or right to move the cursor along the text.
+    @objc private func typedPressed(_ g: UILongPressGestureRecognizer) {
+        guard aiEnabled else { return }
+        if composing.isEmpty {
+            if g.state == .began { onPaste?() }      // nothing typed: a long press pastes
+            return
+        }
+        switch g.state {
+        case .began, .changed:
+            if g.state == .began { Haptics.tap() }
+            let index = characterIndex(atX: g.location(in: typedLabel).x)
+            if index != caret { onCaretTap?(index) }
+        default:
+            break
+        }
+    }
+
+    /// Bottom row: tapping the typed text puts the cursor there (or pastes, when it is empty and the clipboard has text).
+    @objc private func typedTapped(_ g: UITapGestureRecognizer) {
+        guard aiEnabled else { return }
+        if composing.isEmpty { onTrigger?(); return }
+        onCaretTap?(characterIndex(atX: g.location(in: typedLabel).x))
     }
 }

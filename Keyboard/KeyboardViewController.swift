@@ -8,7 +8,7 @@ final class KeyboardViewController: UIInputViewController {
         let result: RewriteResult
     }
 
-    private static let barHeight: CGFloat = 40
+    private static let barHeight: CGFloat = 68
     private static let barOverhang: CGFloat = 17
     private let bar = SuggestionBarView(overhang: KeyboardViewController.barOverhang)
     private let keysStack = UIStackView()
@@ -75,6 +75,8 @@ final class KeyboardViewController: UIInputViewController {
     private var shown = ""
     /// Last applied conversion, kept so the undo button can restore the original.
     private var lastApplied: (original: String, result: String)?
+    /// Converted sentences already placed in the field (most recent last); they are never re-converted when text is added after them.
+    private var appliedTexts: [String] = []
     private var pending: Pending?
     private var task: Task<Void, Never>?
     private var autoTimer: Timer?
@@ -120,7 +122,10 @@ final class KeyboardViewController: UIInputViewController {
         bar.onToneTap = { [weak self] in self?.cycleTone() }
         bar.onAIToggle = { [weak self] in self?.toggleAI() }
         bar.onUndo = { [weak self] in self?.undoApply() }
+        bar.onClear = { [weak self] in self?.clearSentence() }
         bar.onCaretTap = { [weak self] in self?.moveHostCursor(to: $0) }
+        bar.onWordSelect = { [weak self] in self?.selectWord(at: $0) }
+        bar.onSelectAll = { [weak self] in self?.selectAll() }
         bar.onStateChange = { [weak self] in self?.updateReturnLabel() }
 
         rebuildKeys()
@@ -176,6 +181,66 @@ final class KeyboardViewController: UIInputViewController {
     private var mirrorText = ""
     private var mirrorCaret = 0
     private var mirrorMovable = true
+    /// Selection made by double / triple tap in the bar (host fields cannot be given a selection by a keyboard,
+    /// so it is kept here and shown as a highlight). Indices are characters of `mirrorText`.
+    private var selection: Range<Int>?
+
+    private func setSelection(_ r: Range<Int>?) {
+        selection = r
+        bar.setSelection(r)
+    }
+
+    private var selectedMirrorText: String? {
+        guard let sel = selection, sel.upperBound <= mirrorText.count else { return nil }
+        return String(Array(mirrorText)[sel])
+    }
+
+    /// Double tap: select the word at `index`.
+    private func selectWord(at index: Int) {
+        refreshMirror()
+        guard mirrorMovable, !mirrorText.isEmpty else { return }
+        var found: Range<Int>?
+        let text = mirrorText
+        text.enumerateSubstrings(in: text.startIndex..<text.endIndex, options: .byWords) { _, r, _, stop in
+            let lo = text.distance(from: text.startIndex, to: r.lowerBound)
+            let hi = text.distance(from: text.startIndex, to: r.upperBound)
+            if index >= lo && index <= hi { found = lo..<hi; stop = true }
+        }
+        finishWord()
+        invalidateSuggestion()
+        setSelection(found)
+        if found != nil { scheduleAutoSuggest() }
+    }
+
+    /// Triple tap: select the whole line.
+    private func selectAll() {
+        refreshMirror()
+        guard mirrorMovable, !mirrorText.isEmpty else { return }
+        finishWord()
+        invalidateSuggestion()
+        setSelection(0..<mirrorText.count)
+        scheduleAutoSuggest()
+    }
+
+    /// Typing, delete or paste over a selection removes it from the field first. Returns true if something was removed.
+    @discardableResult
+    private func deleteSelection() -> Bool {
+        guard let sel = selection, sel.upperBound <= mirrorText.count else { setSelection(nil); return false }
+        finishWord()
+        let offset = sel.upperBound - mirrorCaret
+        if offset != 0 {
+            ownUntil = Date().addingTimeInterval(0.5)
+            textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
+        }
+        for _ in 0..<sel.count { ownDelete() }
+        var chars = Array(mirrorText)
+        chars.removeSubrange(sel)
+        mirrorText = String(chars)
+        mirrorCaret = sel.lowerBound
+        setSelection(nil)
+        bar.setComposing(mirrorText, caret: mirrorCaret)
+        return true
+    }
 
     /// Reading the field is slow, so the bar catches up a moment after typing pauses.
     private func scheduleMirror() {
@@ -185,11 +250,13 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
-    /// Shows the sentence around the cursor (what is in the host field) with a caret in the bar.
+    /// Shows the line around the cursor (what is in the host field) with a caret in the bar.
     private func refreshMirror() {
         mirrorTimer?.invalidate()
+        let previousMirror = mirrorText
         guard aiOn else {
             mirrorText = ""; mirrorCaret = 0
+            setSelection(nil)
             bar.setComposing("", caret: 0)
             return
         }
@@ -197,26 +264,46 @@ final class KeyboardViewController: UIInputViewController {
         if let sel = textDocumentProxy.selectedText, !sel.isEmpty {
             mirrorText = sel; mirrorCaret = sel.count; mirrorMovable = false
         } else {
-            let ends: Set<Character> = [".", "!", "?", "。", "！", "？", "\n"]
+            // The whole line around the cursor, so earlier sentences stay visible as more are added.
             let before = textDocumentProxy.documentContextBeforeInput ?? ""
             let after = textDocumentProxy.documentContextAfterInput ?? ""
-            let headText = sentenceHead(of: before)
-            var tail = ""
-            for ch in after {
-                if ch == "\n" { break }
-                tail.append(ch)
-                if ends.contains(ch) { break }
-            }
-            mirrorText = headText + tail
-            mirrorCaret = headText.count
+            let head = before.components(separatedBy: "\n").last ?? ""
+            let tail = after.components(separatedBy: "\n").first ?? ""
+            mirrorText = head + tail
+            mirrorCaret = head.count
             mirrorMovable = true
         }
+        if selection != nil, mirrorText != previousMirror { setSelection(nil) }
         bar.setComposing(mirrorText, caret: mirrorCaret)
+    }
+
+    /// The x icon: deletes the whole line shown in the bar from the host field.
+    private func clearSentence() {
+        setSelection(nil)
+        autoTimer?.invalidate()
+        task?.cancel()
+        finishWord()
+        refreshMirror()                      // make sure the bar's picture of the sentence is current
+        invalidateSuggestion()
+        if !mirrorMovable {
+            ownDelete()                      // a selection: deleting once removes it all
+        } else {
+            let tail = mirrorText.count - mirrorCaret
+            if tail > 0 {
+                ownUntil = Date().addingTimeInterval(0.5)
+                textDocumentProxy.adjustTextPosition(byCharacterOffset: tail)
+            }
+            for _ in 0..<mirrorText.count { ownDelete() }
+        }
+        bar.set(.idle)
+        updateAutoShift()
+        refreshMirror()
     }
 
     /// A tap on the typed text in the bar moves the cursor in the host field to that spot.
     private func moveHostCursor(to index: Int) {
         guard mirrorMovable else { return }
+        if selection != nil { setSelection(nil) }
         let offset = index - mirrorCaret
         guard offset != 0 else { return }
         invalidateSuggestion()
@@ -249,6 +336,7 @@ final class KeyboardViewController: UIInputViewController {
             bar.set(.message(L("글이 너무 길어요", "The text is too long")))
             return
         }
+        deleteSelection()
         invalidateSuggestion()
         finishWord()
         ownInsert(text)
@@ -315,13 +403,44 @@ final class KeyboardViewController: UIInputViewController {
     /// (everything after the last sentence end or line break, without its leading whitespace).
     private func currentLine() -> String {
         flushSync()
+        if let picked = selectedMirrorText { return picked }
         if let sel = textDocumentProxy.selectedText, !sel.isEmpty { return sel }
-        return sentenceHead(of: textDocumentProxy.documentContextBeforeInput ?? "")
+        let before = textDocumentProxy.documentContextBeforeInput ?? ""
+        let after = textDocumentProxy.documentContextAfterInput ?? ""
+        return sentenceHead(of: before) + sentenceTail(before: before, after: after)
+    }
+
+    /// The rest of the sentence to the right of the cursor, so a sentence edited in the middle is converted whole.
+    /// Empty when the cursor already sits after a sentence end.
+    private func sentenceTail(before: String, after: String) -> String {
+        let enders: Set<Character> = [".", "!", "?", "。", "！", "？"]
+        var trimmed = Substring(before)
+        while let last = trimmed.last, last == " " || last == "\u{3000}" { trimmed = trimmed.dropLast() }
+        if let last = trimmed.last, enders.contains(last) || last == "\n" { return "" }
+        if trimmed.isEmpty && !before.isEmpty { return "" }
+        var tail = ""
+        for ch in after {
+            if ch == "\n" { break }
+            tail.append(ch)
+            if enders.contains(ch) { break }
+        }
+        return tail
     }
 
     /// The sentence being typed: everything after the previous sentence end or line break. Sentence-ending marks
     /// and spaces at the very end still belong to it, so "…です。" is converted as a whole instead of vanishing.
-    private func sentenceHead(of before: String) -> String {
+    private func sentenceHead(of fullBefore: String) -> String {
+        // Text that was already converted stays out of the way: once new text follows it, only the new text
+        // counts as the sentence being typed, so converting it never rewrites what was applied earlier.
+        var before = fullBefore
+        var floor = fullBefore.startIndex
+        for t in appliedTexts where !t.isEmpty {
+            if let r = fullBefore.range(of: t, options: .backwards),
+               r.upperBound < fullBefore.endIndex, r.upperBound > floor {
+                floor = r.upperBound
+            }
+        }
+        if floor > fullBefore.startIndex { before = String(fullBefore[floor...]) }
         let enders: Set<Character> = [".", "!", "?", "。", "！", "？"]
         var core = Substring(before)
         while let last = core.last, last != "\n", enders.contains(last) || last == " " || last == "\u{3000}" {
@@ -414,15 +533,45 @@ final class KeyboardViewController: UIInputViewController {
             return
         }
         finishWord()
+        if let sel = selection, selectedMirrorText == p.original {
+            // Replace the highlighted part only.
+            let offset = sel.upperBound - mirrorCaret
+            if offset != 0 {
+                ownUntil = Date().addingTimeInterval(0.5)
+                textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
+            }
+            for _ in 0..<sel.count { ownDelete() }
+            ownInsert(p.result.best)
+            AppSettings.queueKeyboardResult(p.result.best, tone: tone)
+            pending = nil
+            setSelection(nil)
+            bar.set(.idle)
+            lastApplied = (p.original, p.result.best)
+            bar.setUndoAvailable(true)
+            updateAutoShift()
+            scheduleMirror()
+            return
+        }
         let hasSelection = !(textDocumentProxy.selectedText ?? "").isEmpty
         let trailing = String(p.original.reversed().prefix(while: { $0 == " " || $0 == "\n" }).reversed())
         let output = p.result.best + (hasSelection ? "" : trailing)
-        if !hasSelection { for _ in 0..<p.original.count { ownDelete() } }
+        if !hasSelection {
+            // The sentence may extend to the right of the cursor: step to its end, then replace all of it.
+            let tail = sentenceTail(before: textDocumentProxy.documentContextBeforeInput ?? "",
+                                    after: textDocumentProxy.documentContextAfterInput ?? "")
+            if !tail.isEmpty {
+                ownUntil = Date().addingTimeInterval(0.5)
+                textDocumentProxy.adjustTextPosition(byCharacterOffset: tail.count)
+            }
+            for _ in 0..<p.original.count { ownDelete() }
+        }
         ownInsert(output)
         AppSettings.queueKeyboardResult(p.result.best, tone: tone)
         pending = nil
         bar.set(.idle)
         lastApplied = (p.original, output)
+        appliedTexts.append(p.result.best)
+        if appliedTexts.count > 8 { appliedTexts.removeFirst() }
         bar.setUndoAvailable(true)
         updateAutoShift()
         scheduleMirror()
@@ -475,6 +624,7 @@ final class KeyboardViewController: UIInputViewController {
     // MARK: - Typing
 
     private func type(_ s: String) {
+        deleteSelection()
         if language == .korean { typeKorean(s); return }
         if language == .japanese || language == .chinese { typeLatin(s); return }
         invalidateSuggestion()
@@ -485,6 +635,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func backspace() {
+        if deleteSelection() { scheduleAutoSuggest(); return }
         invalidateSuggestion()
         if isCompose && !composeText.isEmpty {
             if language == .korean { composer.backspace() } else { latin.backspace() }
@@ -760,6 +911,7 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func typeKana(_ s: String) {
+        deleteSelection()
         invalidateSuggestion()
         if ["、", "。", "？", "！", "…"].contains(s) {
             finishWord()
