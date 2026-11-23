@@ -56,6 +56,11 @@ final class KeyboardViewController: UIInputViewController {
     ]
 
     private var tone = AppSettings.tone
+
+    // SmartBoard-style live conversion: the field always holds the latest translation of the compose buffer.
+    private var liveText = ""          // translation currently placed in the host field
+    private var liveSource = ""        // compose text it was made from
+    private var commitAfterResult = false
     private var pending: Pending?
     private var task: Task<Void, Never>?
     private var autoTimer: Timer?
@@ -153,8 +158,7 @@ final class KeyboardViewController: UIInputViewController {
             // Only suggest for something sentence-like, and not for text we already handled.
             let longEnough: Bool
             switch language {
-            case .korean, .japanese: longEnough = trimmed.count >= 3
-            case .chinese: longEnough = trimmed.count >= 4
+            case .korean, .japanese, .chinese: longEnough = !trimmed.isEmpty // live translation: any pause converts
             case .english: longEnough = trimmed.split(separator: " ").count >= 3
             }
             guard hasFullAccess, longEnough,
@@ -202,7 +206,51 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
+    /// Puts `text` into the host field, replacing the previous live translation.
+    private func replaceLive(with text: String) {
+        if !liveText.isEmpty {
+            let before = textDocumentProxy.documentContextBeforeInput ?? ""
+            // Only delete our own text; if the cursor moved elsewhere, leave the old text alone.
+            if before.hasSuffix(liveText) {
+                for _ in 0..<liveText.count { textDocumentProxy.deleteBackward() }
+            }
+        }
+        textDocumentProxy.insertText(text)
+        liveText = text
+    }
+
+    /// The compose buffer was emptied: take the translation back out of the field.
+    private func removeLive() {
+        if !liveText.isEmpty {
+            let before = textDocumentProxy.documentContextBeforeInput ?? ""
+            if before.hasSuffix(liveText) {
+                for _ in 0..<liveText.count { textDocumentProxy.deleteBackward() }
+            }
+        }
+        liveText = ""
+        liveSource = ""
+    }
+
+    /// Keeps the translation in the field and clears the compose buffer.
+    private func commitLive() {
+        if !liveText.isEmpty { AppSettings.queueKeyboardResult(liveText, tone: tone) }
+        liveText = ""
+        liveSource = ""
+        commitAfterResult = false
+        composeClear()
+        updateBuffer()
+    }
+
     private func show(_ r: RewriteResult, line: String, trimmed: String) {
+        if isCompose {
+            guard composeText == line else { return } // typed more while the request was in flight
+            replaceLive(with: r.best)
+            liveSource = line
+            pending = nil
+            bar.set(.idle)
+            if commitAfterResult { commitLive() }
+            return
+        }
         if r.best == trimmed {
             pending = nil
             bar.set(.ok(L("이미 자연스러운 문장이에요", "Already sounds natural")))
@@ -245,6 +293,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private func invalidateSuggestion() {
         task?.cancel()
+        commitAfterResult = false
         if pending != nil { pending = nil }
         switch bar.state {
         case .idle: break
@@ -289,7 +338,7 @@ final class KeyboardViewController: UIInputViewController {
             invalidateSuggestion()
             if language == .korean { composer.backspace() } else { latin.backspace() }
             updateBuffer()
-            scheduleAutoSuggest()
+            if composeText.isEmpty { removeLive() } else { scheduleAutoSuggest() }
             return
         }
         invalidateSuggestion()
@@ -375,6 +424,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private func updateBuffer() {
         bar.composing = composeText
+        updateReturnLabel()
     }
 
     private func toggleLanguage() {
@@ -382,7 +432,7 @@ final class KeyboardViewController: UIInputViewController {
         let i = list.firstIndex(of: language) ?? 0
         language = list[(i + 1) % list.count]
         latin.japanese = language == .japanese
-        composeClear()
+        commitLive()
         invalidateSuggestion()
         autoTimer?.invalidate()
         shifted = false
@@ -397,9 +447,14 @@ final class KeyboardViewController: UIInputViewController {
 
     private func tapReturn() {
         if isCompose {
-            if case .result = bar.state { applySuggestion(); return }
-            if !composeText.isEmpty { triggerRewrite(); return }
-            textDocumentProxy.insertText("\n")
+            if composeText.isEmpty {
+                textDocumentProxy.insertText("\n")
+            } else if liveSource == composeText && !liveText.isEmpty {
+                commitLive()                 // translation already in the field: just accept it
+            } else {
+                commitAfterResult = true     // convert now, then accept
+                triggerRewrite()
+            }
             return
         }
         type("\n")
@@ -408,9 +463,7 @@ final class KeyboardViewController: UIInputViewController {
     private func updateReturnLabel() {
         guard let returnButton else { return }
         var title = "return"
-        if isCompose {
-            if case .result = bar.state { title = L("입력", "Insert") } else { title = L("변환", "Convert") }
-        }
+        if isCompose && !composeText.isEmpty { title = L("완료", "Done") }
         returnButton.setTitle(title, for: .normal)
     }
 
