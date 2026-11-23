@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// Single-page app: keyboard setup, settings and history on one screen.
+/// Two pages in a tab bar (Liquid Glass on iOS 26+): settings and history.
 struct RootView: View {
     @StateObject private var history = HistoryStore()
     @Environment(\.scenePhase) private var scenePhase
@@ -15,14 +15,21 @@ struct RootView: View {
     @State private var haptics = AppSettings.haptics
     @State private var autoCapitalize = AppSettings.autoCapitalize
     @State private var saveHistory = AppSettings.saveHistory
-    @State private var composeEnglish = AppSettings.composeEnglish
     @State private var aiEnabled = AppSettings.aiEnabled
     @State private var targetLanguage = AppSettings.targetLanguage
 
     var body: some View {
-        NavigationStack {
-            content
-                .toolbar(.hidden, for: .navigationBar)
+        TabView {
+            NavigationStack {
+                content
+                    .toolbar(.hidden, for: .navigationBar)
+            }
+            .tabItem { Label(L("설정", "Settings"), systemImage: "gearshape") }
+
+            NavigationStack {
+                HistoryPage(history: history)
+            }
+            .tabItem { Label(L("기록", "History"), systemImage: "clock.arrow.circlepath") }
         }
     }
 
@@ -53,7 +60,6 @@ struct RootView: View {
         .onChange(of: haptics) { AppSettings.haptics = $1 }
         .onChange(of: autoCapitalize) { AppSettings.autoCapitalize = $1 }
         .onChange(of: saveHistory) { AppSettings.saveHistory = $1 }
-        .onChange(of: composeEnglish) { AppSettings.composeEnglish = $1 }
         .onChange(of: aiEnabled) { AppSettings.aiEnabled = $1 }
     }
 
@@ -132,7 +138,6 @@ struct RootView: View {
                 ForEach(JapaneseLayout.allCases) { Text($0.label).tag($0) }
             }
             Toggle(L("AI 교정", "AI rewriting"), isOn: $aiEnabled)
-            Toggle(L("영어도 상단 바에 입력", "Type English in the top bar"), isOn: $composeEnglish)
             Toggle(L("입력하면 자동으로 교정", "Auto-suggest while typing"), isOn: $autoSuggest)
             Picker(L("키보드 높이", "Keyboard height"), selection: $keyboardHeight) {
                 ForEach(KeyboardHeight.allCases) { Text($0.label).tag($0) }
@@ -150,16 +155,6 @@ struct RootView: View {
     private var historySection: some View {
         Section {
             Toggle(L("기록 저장", "Save history"), isOn: $saveHistory)
-            NavigationLink {
-                HistoryPage(history: history)
-            } label: {
-                HStack {
-                    Text(L("기록 보기", "View history"))
-                    Spacer()
-                    Text("\(history.items.count)")
-                        .foregroundStyle(.secondary)
-                }
-            }
         } header: {
             Theme.eyebrow(L("기록", "History"))
         } footer: {

@@ -25,19 +25,9 @@ final class KeyboardViewController: UIInputViewController {
     private var composer = HangulComposer()
     private var latin = LatinComposer()
 
-    /// Every language types into the top bar. English does too, except in URL / email / number / secure fields.
     private var aiOn: Bool { AppSettings.aiEnabled }
-    private var isCompose: Bool { language != .english || (aiOn && englishComposeAllowed) }
-    private var composeCaret: Int { language == .korean ? composer.caretIndex : latin.caretIndex }
-    private var englishComposeAllowed: Bool {
-        guard AppSettings.composeEnglish, textDocumentProxy.isSecureTextEntry != true else { return false }
-        switch textDocumentProxy.keyboardType ?? .default {
-        case .URL, .emailAddress, .webSearch, .numberPad, .phonePad, .decimalPad, .namePhonePad, .asciiCapableNumberPad, .twitter:
-            return false
-        default:
-            return true
-        }
-    }
+    /// Korean / Japanese / Chinese letters are composed in a one-word buffer that is mirrored into the host field.
+    private var isCompose: Bool { language != .english }
     private var composeText: String {
         switch language {
         case .korean: return composer.text
@@ -61,6 +51,18 @@ final class KeyboardViewController: UIInputViewController {
         if on.contains(.chinese) { list.append(.chinese) }
         return list
     }
+    /// The mic (dictation) key listens in the language of the layout that is showing.
+    override var primaryLanguage: String? {
+        get {
+            switch language {
+            case .english: return "en-US"
+            case .korean: return "ko-KR"
+            case .japanese: return "ja-JP"
+            case .chinese: return "zh-CN"
+            }
+        }
+        set { }
+    }
     private var heightConstraint: NSLayoutConstraint!
     private var returnButton: KeyButton?
     private static let shiftedJamo: [String: String] = [
@@ -69,11 +71,10 @@ final class KeyboardViewController: UIInputViewController {
 
     private var tone = AppSettings.tone
 
-    // SmartBoard-style live conversion: the field always holds the latest translation of the compose buffer.
-    private var liveText = ""          // translation currently placed in the host field
-    private var liveSource = ""        // compose text it was made from
-    private var commitAfterResult = false
-    private var composeResult: String?   // converted text waiting for the send button
+    /// The word being composed, exactly as it currently sits in the host field.
+    private var shown = ""
+    /// Last applied conversion, kept so the undo button can restore the original.
+    private var lastApplied: (original: String, result: String)?
     private var pending: Pending?
     private var task: Task<Void, Never>?
     private var autoTimer: Timer?
@@ -110,13 +111,15 @@ final class KeyboardViewController: UIInputViewController {
         ])
 
         bar.setTone(tone)
-        bar.onTrigger = { [weak self] in self?.triggerRewrite() }
+        bar.onTrigger = { [weak self] in
+            guard let self else { return }
+            if self.bar.canPaste { self.pasteFromClipboard() } else { self.triggerRewrite() }
+        }
+        bar.onPaste = { [weak self] in self?.pasteFromClipboard() }
         bar.onApply = { [weak self] in self?.applySuggestion() }
         bar.onToneTap = { [weak self] in self?.cycleTone() }
         bar.onAIToggle = { [weak self] in self?.toggleAI() }
-        bar.onClear = { [weak self] in self?.clearAll() }
-        bar.onSend = { [weak self] in self?.deliver() }
-        bar.onCaretTap = { [weak self] in self?.moveCaret(to: $0) }
+        bar.onUndo = { [weak self] in self?.undoApply() }
         bar.onStateChange = { [weak self] in self?.updateReturnLabel() }
 
         rebuildKeys()
@@ -124,8 +127,7 @@ final class KeyboardViewController: UIInputViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        pollTimer?.invalidate()
-        pollTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { [weak self] _ in self?.watchForDictation() }
+        Haptics.enabled = AppSettings.haptics
         tone = AppSettings.tone
         bar.setTone(tone)
         bar.autoMode = AppSettings.autoSuggest
@@ -144,7 +146,8 @@ final class KeyboardViewController: UIInputViewController {
             }
             rebuildKeys()
         }
-        updateBuffer()
+        finishWord()
+        refreshPasteHint()
         heightConstraint.constant = currentHeight()
         bar.set(.idle)
         updateAutoShift()
@@ -152,18 +155,51 @@ final class KeyboardViewController: UIInputViewController {
 
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
+        // Reading the field's text is a slow cross-process call. Skip it for our own keystrokes
+        // so fast typing stays smooth; only outside changes (cursor moves, paste, dictation) are checked.
+        guard Date() > ownUntil, !syncPending else { return }
         updateAutoShift()
-        watchForDictation()
+        refreshPasteHint()
+        // The cursor was moved (or the field changed) behind our back: the word buffer no longer matches the field.
+        if !shown.isEmpty, Date() > ownUntil {
+            let before = textDocumentProxy.documentContextBeforeInput ?? ""
+            if !before.hasSuffix(shown) { finishWord() }
+        }
     }
 
-    // MARK: - Own edits and dictation
+    // MARK: - Paste
+
+    /// `hasStrings` does not read the clipboard, so it does not trigger the system paste prompt.
+    private func refreshPasteHint() {
+        bar.canPaste = aiOn && hasFullAccess && UIPasteboard.general.hasStrings
+            && currentLine().isEmpty && (textDocumentProxy.documentContextBeforeInput ?? "").isEmpty
+    }
+
+    /// Puts the clipboard text into the field and converts it right away.
+    private func pasteFromClipboard() {
+        guard hasFullAccess else {
+            bar.set(.message(L("설정에서 '전체 접근 허용'을 켜주세요", "Turn on 'Allow Full Access' in Settings")))
+            return
+        }
+        guard let text = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else {
+            bar.set(.message(L("클립보드에 붙여넣을 글이 없어요", "Nothing to paste")))
+            return
+        }
+        guard text.count <= AppConfig.maxInputLength else {
+            bar.set(.message(L("글이 너무 길어요", "The text is too long")))
+            return
+        }
+        invalidateSuggestion()
+        finishWord()
+        ownInsert(text)
+        bar.canPaste = false
+        // Give the host a moment to report the new text before reading the sentence back.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in self?.triggerRewrite() }
+    }
+
+    // MARK: - Typing straight into the host field
 
     private var ownUntil = Date.distantPast
-    private var knownContext = ""
-    private var knownAfter = ""
-    private var pollTimer: Timer?
-    private var dictBaseline: String?
-    private var dictTimer: Timer?
 
     private func ownInsert(_ s: String) {
         ownUntil = Date().addingTimeInterval(0.5)
@@ -175,56 +211,35 @@ final class KeyboardViewController: UIInputViewController {
         textDocumentProxy.deleteBackward()
     }
 
-    /// Text the system dictation (mic key) writes into the field is pulled into the top bar instead.
-    private func watchForDictation() {
-        let ctx = textDocumentProxy.documentContextBeforeInput ?? ""
-        let after = textDocumentProxy.documentContextAfterInput ?? ""
-        if dictBaseline == nil {
-            defer { knownContext = ctx; knownAfter = after }
-            // The user tapped a new cursor position in the host field (not in the top bar): finish composing
-            // so the text already in the field can be edited directly.
-            if isCompose, !composeText.isEmpty, Date() > ownUntil, after != knownAfter {
-                commitLive()
-                return
-            }
-            // Moving the cursor also grows the "before" text; real dictation leaves the text after the cursor untouched.
-            guard isCompose, aiOn, Date() > ownUntil, after == knownAfter,
-                  ctx.count > knownContext.count, ctx.hasPrefix(knownContext) else { return }
-            dictBaseline = knownContext
-        }
-        dictTimer?.invalidate()
-        dictTimer = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: false) { [weak self] _ in
-            self?.flushDictation()
-        }
+    /// Makes the host field show the current word buffer. Keys typed within a few milliseconds of each other
+    /// are folded into one update, so a fast burst costs one delete/insert round trip instead of one per key.
+    private var syncPending = false
+    private func syncField() {
+        guard !syncPending else { return }
+        syncPending = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.025) { [weak self] in self?.flushSync() }
     }
 
-    private func flushDictation() {
-        guard let base = dictBaseline else { return }
-        dictBaseline = nil
-        let ctx = textDocumentProxy.documentContextBeforeInput ?? ""
-        knownContext = ctx
-        knownAfter = textDocumentProxy.documentContextAfterInput ?? ""
-        guard ctx.hasPrefix(base), ctx.count > base.count else { return }
-        let added = String(ctx.dropFirst(base.count))
-        for _ in 0..<added.count { ownDelete() }
-        let clean = added.replacingOccurrences(of: "\n", with: " ")
-        invalidateSuggestion()
-        if language == .korean { composer.commitLiteral(clean) } else { latin.commitLiteral(clean) }
-        updateBuffer()
-        if !aiOn { commitLive() }
-        scheduleAutoSuggest()
+    /// Applies a pending update now. Everything that reads or edits the field calls this first.
+    private func flushSync() {
+        guard syncPending else { return }
+        syncPending = false
+        let new = composeText
+        guard new != shown else { return }
+        let old = Array(shown), neu = Array(new)
+        var keep = 0
+        while keep < old.count, keep < neu.count, old[keep] == neu[keep] { keep += 1 }
+        for _ in 0..<(old.count - keep) { ownDelete() }
+        let rest = String(neu[keep...])
+        if !rest.isEmpty { ownInsert(rest) }
+        shown = new
     }
 
-    /// Clears everything typed into the top bar, and the translation already shown in the field.
-    private func clearAll() {
-        autoTimer?.invalidate()
-        task?.cancel()
-        removeLive()
-        commitAfterResult = false
+    /// The word is done (space, punctuation, return, cursor move, language switch): its text simply stays in the field.
+    private func finishWord() {
+        flushSync()
         composeClear()
-        invalidateSuggestion()
-        bar.set(.idle)
-        updateBuffer()
+        shown = ""
     }
 
     /// Height from the app setting, plus room for the Korean compose bar.
@@ -235,16 +250,23 @@ final class KeyboardViewController: UIInputViewController {
 
     // MARK: - Rewrite
 
+    /// What a conversion would replace: the selected text, or else the current sentence before the cursor
+    /// (everything after the last sentence end or line break, without its leading whitespace).
     private func currentLine() -> String {
+        flushSync()
+        if let sel = textDocumentProxy.selectedText, !sel.isEmpty { return sel }
         let before = textDocumentProxy.documentContextBeforeInput ?? ""
-        return before.components(separatedBy: "\n").last ?? ""
+        let ends: Set<Character> = [".", "!", "?", "。", "！", "？", "\n"]
+        var seg = Substring(before)
+        if let idx = before.lastIndex(where: { ends.contains($0) }) { seg = before[before.index(after: idx)...] }
+        return String(seg.drop(while: { $0 == " " || $0 == "\t" }))
     }
 
     /// `auto` = fired by the typing-pause timer (quiet about empty/short input); otherwise by tapping the bar.
     private func triggerRewrite(auto: Bool = false) {
         autoTimer?.invalidate()
         guard aiOn else { return }
-        let line = isCompose ? composeText : currentLine()
+        let line = currentLine()
         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if auto {
@@ -299,86 +321,8 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
-    /// Puts `text` into the host field, replacing the previous live translation.
-    private func replaceLive(with text: String) {
-        var keep = 0
-        if !liveText.isEmpty {
-            let before = textDocumentProxy.documentContextBeforeInput ?? ""
-            // Only touch our own text; if the cursor moved elsewhere, leave the old text alone.
-            if before.hasSuffix(liveText) {
-                // Keep the common beginning so only the changed tail is rewritten (no whole-text blink).
-                let old = Array(liveText), new = Array(text)
-                while keep < old.count, keep < new.count, old[keep] == new[keep] { keep += 1 }
-                for _ in 0..<(old.count - keep) { ownDelete() }
-            }
-        }
-        let rest = String(text.dropFirst(keep))
-        if !rest.isEmpty { ownInsert(rest) }
-        liveText = text
-    }
-
-    /// The compose buffer was emptied: take the translation back out of the field.
-    private func removeLive() {
-        if !liveText.isEmpty {
-            let before = textDocumentProxy.documentContextBeforeInput ?? ""
-            if before.hasSuffix(liveText) {
-                for _ in 0..<liveText.count { ownDelete() }
-            }
-        }
-        liveText = ""
-        liveSource = ""
-    }
-
-    /// Keeps the translation in the field and clears the compose buffer.
-    private func commitLive() {
-        if liveText.isEmpty && !composeText.isEmpty {
-            if aiOn, let r = composeResult, liveSource == composeText {
-                ownInsert(r)
-                AppSettings.queueKeyboardResult(r, tone: tone)
-            } else {
-                ownInsert(composeText)   // nothing converted yet: keep what was typed
-            }
-        } else if aiOn && !liveText.isEmpty {
-            AppSettings.queueKeyboardResult(liveText, tone: tone)
-        }
-        liveText = ""
-        liveSource = ""
-        composeResult = nil
-        commitAfterResult = false
-        composeClear()
-        updateBuffer()
-    }
-
-    /// Send button / return: puts the converted text into the host field (converting first if needed).
-    private func deliver() {
-        guard aiOn, !composeText.isEmpty else { return }
-        if let r = composeResult, liveSource == composeText {
-            ownInsert(r)
-            AppSettings.queueKeyboardResult(r, tone: tone)
-            liveSource = ""
-            composeResult = nil
-            commitAfterResult = false
-            composeClear()
-            bar.set(.idle)
-            updateBuffer()
-            updateAutoShift()
-        } else {
-            commitAfterResult = true
-            triggerRewrite()
-        }
-    }
-
     private func show(_ r: RewriteResult, line: String, trimmed: String) {
-        if isCompose {
-            guard composeText == line else { return } // typed more while the request was in flight
-            pending = nil
-            liveSource = line
-            if !aiOn { return }
-            composeResult = r.best
-            bar.set(.result(r.best))
-            if commitAfterResult { deliver() }
-            return
-        }
+        guard currentLine() == line else { return }   // typed more while the request was in flight
         if r.best == trimmed {
             pending = nil
             bar.set(.ok(L("이미 자연스러운 문장이에요", "Already sounds natural")))
@@ -388,41 +332,44 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
+    /// Replaces the sentence in the host field with the suggestion; the undo button can bring the original back.
     private func applySuggestion() {
         guard let p = pending else { return }
-        if isCompose {
-            // Compose buffer -> insert the English result into the host field.
-            guard composeText == p.original else {
-                pending = nil
-                bar.set(.idle)
-                return
-            }
-            ownInsert(p.result.best)
-            AppSettings.queueKeyboardResult(p.result.best, tone: tone)
-            composeClear()
-            pending = nil
-            updateBuffer()
-            bar.set(.idle)
-            return
-        }
         // Make sure the text hasn't changed since the suggestion was requested.
         guard currentLine() == p.original else {
             pending = nil
             bar.set(.message(L("문장이 바뀌었어요. 바를 다시 탭하세요", "The text changed. Tap the bar again")))
             return
         }
-        for _ in 0..<p.original.count { ownDelete() }
-        ownInsert(p.result.best)
+        finishWord()
+        let hasSelection = !(textDocumentProxy.selectedText ?? "").isEmpty
+        let trailing = String(p.original.reversed().prefix(while: { $0 == " " || $0 == "\n" }).reversed())
+        let output = p.result.best + (hasSelection ? "" : trailing)
+        if !hasSelection { for _ in 0..<p.original.count { ownDelete() } }
+        ownInsert(output)
         AppSettings.queueKeyboardResult(p.result.best, tone: tone)
         pending = nil
+        bar.set(.idle)
+        lastApplied = (p.original, output)
+        bar.setUndoAvailable(true)
+        updateAutoShift()
+    }
+
+    private func undoApply() {
+        guard let a = lastApplied else { return }
+        lastApplied = nil
+        bar.setUndoAvailable(false)
+        let before = textDocumentProxy.documentContextBeforeInput ?? ""
+        guard before.hasSuffix(a.result) else { return }
+        for _ in 0..<a.result.count { ownDelete() }
+        ownInsert(a.original)
         bar.set(.idle)
         updateAutoShift()
     }
 
     private func invalidateSuggestion() {
         task?.cancel()
-        composeResult = nil
-        commitAfterResult = false
+        if lastApplied != nil { lastApplied = nil; bar.setUndoAvailable(false) }
         if pending != nil { pending = nil }
         switch bar.state {
         case .idle: break
@@ -454,7 +401,7 @@ final class KeyboardViewController: UIInputViewController {
 
     private func type(_ s: String) {
         if language == .korean { typeKorean(s); return }
-        if language == .japanese || language == .chinese || isCompose { typeLatin(s); return }
+        if language == .japanese || language == .chinese { typeLatin(s); return }
         invalidateSuggestion()
         ownInsert(s)
         if shifted && !capsLock { shifted = false; refreshLetters() }
@@ -463,23 +410,21 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func backspace() {
-        if isCompose && !composeText.isEmpty {
-            invalidateSuggestion()
-            if language == .korean { composer.backspace() } else { latin.backspace() }
-            updateBuffer()
-            if composeText.isEmpty { removeLive() } else { scheduleAutoSuggest() }
-            return
-        }
         invalidateSuggestion()
-        ownDelete()
-        updateAutoShift()
+        if isCompose && !composeText.isEmpty {
+            if language == .korean { composer.backspace() } else { latin.backspace() }
+            syncField()
+        } else {
+            flushSync()      // a pending word update must reach the field before we delete behind it
+            ownDelete()
+            updateAutoShift()
+        }
         scheduleAutoSuggest()
     }
 
     private func updateAutoShift() {
         guard language == .english, layer == .letters, !capsLock else { return }
-        // While composing, the text being typed lives in the top bar, not in the host field.
-        let before = (isCompose && aiOn && !composeText.isEmpty) ? composeText : (textDocumentProxy.documentContextBeforeInput ?? "")
+        let before = textDocumentProxy.documentContextBeforeInput ?? ""
         let should = AppSettings.autoCapitalize && (before.isEmpty
             || before.hasSuffix("\n")
             || before.hasSuffix(". ") || before.hasSuffix("! ") || before.hasSuffix("? "))
@@ -519,72 +464,39 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func typeKorean(_ s: String) {
-        // With nothing being composed, spaces/punctuation go straight to the host field.
-        if composer.isEmpty && !HangulComposer.isJamo(s) {
-            ownInsert(s)
-            return
-        }
         invalidateSuggestion()
-        let isLiteral = !HangulComposer.isJamo(s)
         if HangulComposer.isJamo(s), let ch = s.first {
             composer.input(ch)
+            syncField()
         } else {
-            composer.commitLiteral(s)
+            finishWord()
+            ownInsert(s)
         }
         if shifted && !capsLock { shifted = false; refreshLetters() }
-        updateBuffer()
-        if !aiOn && isLiteral { commitLive() }
         scheduleAutoSuggest()
     }
 
-    /// Japanese (romaji) and Chinese (pinyin): letters are composed in the buffer, then converted to English.
+    /// Japanese (romaji) and Chinese (pinyin): letters are composed as one word in the field.
     private func typeLatin(_ s: String) {
-        if latin.isEmpty && !LatinComposer.isLetter(s) {
-            ownInsert(s)
-            return
-        }
         invalidateSuggestion()
         if LatinComposer.isLetter(s), let ch = s.first {
-            // English keeps the case the shift key produced; romaji and pinyin are lowercase.
-            latin.input(language == .english ? ch : Character(ch.lowercased()))
+            latin.input(Character(ch.lowercased()))
+            syncField()
         } else {
-            latin.commitLiteral(s)
+            finishWord()
+            ownInsert(s)
         }
         if shifted && !capsLock { shifted = false; refreshLetters() }
-        updateBuffer()
-        if !aiOn && !LatinComposer.isLetter(s) { commitLive() }
         scheduleAutoSuggest()
-    }
-
-    private func updateBuffer() {
-        bar.setComposing(aiOn ? composeText : "", caret: composeCaret)
-        if !aiOn && language != .english { mirrorToField() }
-        updateReturnLabel()
-    }
-
-    /// AI off: behave like a plain keyboard. The composed text is written straight into the host field.
-    private func mirrorToField() {
-        let t = composeText
-        guard t != liveText else { return }
-        replaceLive(with: t)
-        liveSource = t
-    }
-
-    private func moveCaret(to index: Int) {
-        invalidateSuggestion()
-        if language == .korean { composer.moveCaret(to: index) } else { latin.moveCaret(to: index) }
-        updateBuffer()
     }
 
     private func toggleAI() {
         autoTimer?.invalidate()
         task?.cancel()
-        commitLive()                       // keep what the field already holds
         AppSettings.aiEnabled.toggle()
         bar.aiEnabled = AppSettings.aiEnabled
         pending = nil
         bar.set(.idle)
-        updateBuffer()
     }
 
     private func toggleLanguage() {
@@ -592,7 +504,7 @@ final class KeyboardViewController: UIInputViewController {
         let i = list.firstIndex(of: language) ?? 0
         language = list[(i + 1) % list.count]
         latin.japanese = language == .japanese
-        commitLive()
+        finishWord()
         invalidateSuggestion()
         autoTimer?.invalidate()
         shifted = false
@@ -600,31 +512,16 @@ final class KeyboardViewController: UIInputViewController {
         layer = .letters
         heightConstraint.constant = currentHeight()
         bar.set(.idle)
-        updateBuffer()
         rebuildKeys()
         updateAutoShift()
     }
 
     private func tapReturn() {
-        if isCompose {
-            if composeText.isEmpty {
-                ownInsert("\n")
-            } else if !aiOn {
-                commitLive()
-                ownInsert("\n")
-            } else {
-                deliver()
-            }
-            return
-        }
         type("\n")
     }
 
     private func updateReturnLabel() {
-        guard let returnButton else { return }
-        var title = "return"
-        if isCompose && aiOn && !composeText.isEmpty { title = L("완료", "Done") }
-        returnButton.setTitle(title, for: .normal)
+        returnButton?.setTitle("return", for: .normal)
     }
 
     // MARK: - Layout
@@ -773,6 +670,7 @@ final class KeyboardViewController: UIInputViewController {
 
     /// Press and hold the space bar, then slide left or right to move the text cursor (like the iOS trackpad).
     private func attachSpaceCursor(_ key: KeyButton) {
+        key.triggersOnTouchDown = false      // a long press slides the cursor instead of typing a space
         let g = UILongPressGestureRecognizer(target: self, action: #selector(spaceCursor(_:)))
         g.minimumPressDuration = 0.3
         g.allowableMovement = 10_000
@@ -783,8 +681,7 @@ final class KeyboardViewController: UIInputViewController {
         let x = g.location(in: view).x
         switch g.state {
         case .began:
-            commitLive()                     // finish any composed text first
-            updateBuffer()
+            finishWord()                     // finish any composed text first
             cursorLastX = x; cursorRemainder = 0
             if AppSettings.haptics { UIImpactFeedbackGenerator(style: .medium).impactOccurred() }
             (g.view as? KeyButton)?.setCursorMode(true)
@@ -806,15 +703,14 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func typeKana(_ s: String) {
-        // With nothing composed, punctuation goes straight to the host field.
-        if latin.isEmpty && ["、", "。", "？", "！", "…"].contains(s) {
-            ownInsert(s)
-            return
-        }
         invalidateSuggestion()
-        latin.commitLiteral(s)
-        updateBuffer()
-        if !aiOn && ["、", "。", "？", "！", "…"].contains(s) { commitLive() }
+        if ["、", "。", "？", "！", "…"].contains(s) {
+            finishWord()
+            ownInsert(s)
+        } else {
+            latin.commitLiteral(s)
+            syncField()
+        }
         scheduleAutoSuggest()
     }
 
@@ -849,7 +745,7 @@ final class KeyboardViewController: UIInputViewController {
             guard let self else { return }
             self.invalidateSuggestion()
             self.latin.toggleVoicing()
-            self.updateBuffer()
+            self.syncField()
             self.scheduleAutoSuggest()
         }
         midRows.append(hstack([voicing, makeFlick(["わ", "を", "ん", "ー", "〜"]), makeFlick(["、", "。", "？", "！", "…"])]))

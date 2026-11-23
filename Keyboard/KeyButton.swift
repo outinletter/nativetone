@@ -16,11 +16,26 @@ enum KeyboardTheme {
         ? UIColor(red: 0.04, green: 0.08, blue: 0.15, alpha: 1) : .white }
 }
 
+/// One reused, pre-warmed generator: creating a new one per key press adds noticeable latency.
+enum Haptics {
+    static var enabled = AppSettings.haptics
+    private static let light = UIImpactFeedbackGenerator(style: .light)
+    static func tap() {
+        guard enabled else { return }
+        light.impactOccurred()
+        light.prepare()
+    }
+}
+
 final class KeyButton: UIButton {
     enum Style { case letter, special }
 
     var onTap: (() -> Void)?
     var onRepeat: (() -> Void)?
+    /// Character keys insert the moment the finger lands, like the system keyboard. Keys that also take
+    /// a long press (space) or are not characters (shift, 123, return) fire when the finger lifts.
+    lazy var triggersOnTouchDown: Bool = style == .letter
+    private var firedOnDown = false
 
     private let style: Style
     private var popup: UILabel?
@@ -48,16 +63,23 @@ final class KeyButton: UIButton {
 
         addAction(UIAction { [weak self] _ in
             guard let self else { return }
+            if self.firedOnDown { self.firedOnDown = false; return }
             if self.onRepeat == nil { self.onTap?() }
         }, for: .touchUpInside)
 
         addAction(UIAction { [weak self] _ in
-            if AppSettings.haptics { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
-            self?.showPopup()
-            self?.beginRepeat()
+            guard let self else { return }
+            self.firedOnDown = false
+            if self.triggersOnTouchDown, self.onRepeat == nil, let tap = self.onTap {
+                self.firedOnDown = true
+                tap()
+            }
+            Haptics.tap()
+            self.showPopup()
+            self.beginRepeat()
         }, for: .touchDown)
         for e: UIControl.Event in [.touchUpInside, .touchUpOutside, .touchCancel] {
-            addAction(UIAction { [weak self] _ in self?.endRepeat(); self?.hidePopup() }, for: e)
+            addAction(UIAction { [weak self] _ in self?.endRepeat(); self?.hidePopup(); if e != .touchUpInside { self?.firedOnDown = false } }, for: e)
         }
     }
 

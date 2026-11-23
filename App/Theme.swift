@@ -41,6 +41,8 @@ enum Theme {
         UINavigationBar.appearance().standardAppearance = nav
         UINavigationBar.appearance().scrollEdgeAppearance = nav
 
+        // iOS 26+: leave the tab bar alone so the system draws its Liquid Glass.
+        if #available(iOS 26, *) { return }
         let tab = UITabBarAppearance()
         tab.configureWithOpaqueBackground()
         tab.backgroundColor = paper

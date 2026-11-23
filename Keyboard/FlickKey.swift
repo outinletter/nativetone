@@ -44,7 +44,7 @@ final class FlickKey: UIView {
         guard let t = touches.first else { return }
         start = t.location(in: self)
         selected = 0
-        if AppSettings.haptics { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+        Haptics.tap()
         showPopup()
     }
 

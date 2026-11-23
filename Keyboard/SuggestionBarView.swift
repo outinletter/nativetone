@@ -17,8 +17,13 @@ final class SuggestionBarView: UIView {
     var onApply: (() -> Void)?
     var onToneTap: (() -> Void)?
     var onAIToggle: (() -> Void)?
-    var onClear: (() -> Void)?
-    var onSend: (() -> Void)?
+    var onUndo: (() -> Void)?
+    /// Long press on the bar: paste the clipboard into the field.
+    var onPaste: (() -> Void)?
+    /// True when the field is empty and the clipboard has text: the idle hint offers to paste it.
+    var canPaste = false {
+        didSet { if canPaste != oldValue, case .idle = state { set(.idle) } }
+    }
     /// Called with the character index the user tapped while composing.
     var onCaretTap: ((Int) -> Void)?
     var onStateChange: (() -> Void)?
@@ -29,8 +34,9 @@ final class SuggestionBarView: UIView {
     private let label = UILabel()
     private let aiButton = UIButton(type: .custom)
     private let toneButton = UIButton(type: .system)
-    private let clearButton = UIButton(type: .system)
-    private let sendButton = UIButton(type: .system)
+    private let undoButton = UIButton(type: .system)
+    private let undoSlot = UIView()
+    private static let circle: CGFloat = 30
 
     private var shownKey = ""
 
@@ -46,66 +52,51 @@ final class SuggestionBarView: UIView {
         label.isUserInteractionEnabled = true
         label.lineBreakMode = .byClipping
         label.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(labelTapped(_:))))
+        label.addGestureRecognizer(UILongPressGestureRecognizer(target: self, action: #selector(labelLongPressed(_:))))
         label.setContentHuggingPriority(.defaultLow, for: .horizontal)
         label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
+        // Style icon (left) plus round undo and AI buttons (right), all in 30pt slots.
+        let d = Self.circle
         aiButton.setTitle("AI", for: .normal)
         aiButton.titleLabel?.font = .systemFont(ofSize: 12, weight: .bold)
-        aiButton.layer.cornerRadius = 12
-        aiButton.layer.borderWidth = 1
+        aiButton.layer.cornerRadius = d / 2
+        aiButton.layer.borderWidth = 1.5
         aiButton.addAction(UIAction { [weak self] _ in
-            if AppSettings.haptics { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+            Haptics.tap()
             self?.onAIToggle?()
         }, for: .touchUpInside)
 
         toneButton.tintColor = KeyboardTheme.accent
-        toneButton.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
-        toneButton.titleLabel?.adjustsFontSizeToFitWidth = true
         toneButton.addAction(UIAction { [weak self] _ in self?.onToneTap?() }, for: .touchUpInside)
 
-        clearButton.setImage(UIImage(systemName: "xmark.circle.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 17)), for: .normal)
-        clearButton.tintColor = .tertiaryLabel
-        clearButton.isHidden = true
-        clearButton.addAction(UIAction { [weak self] _ in
-            if AppSettings.haptics { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
-            self?.onClear?()
+        undoButton.setImage(UIImage(systemName: "arrow.uturn.backward", withConfiguration: UIImage.SymbolConfiguration(pointSize: 13, weight: .bold)), for: .normal)
+        undoButton.tintColor = KeyboardTheme.onAccent
+        undoButton.backgroundColor = KeyboardTheme.accent
+        undoButton.layer.cornerRadius = d / 2
+        undoButton.addAction(UIAction { [weak self] _ in
+            Haptics.tap()
+            self?.onUndo?()
         }, for: .touchUpInside)
+        undoSlot.isHidden = true
 
-        sendButton.setImage(UIImage(systemName: "arrow.up.circle.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 26)), for: .normal)
-        sendButton.tintColor = KeyboardTheme.accent
-        sendButton.addAction(UIAction { [weak self] _ in
-            if AppSettings.haptics { UIImpactFeedbackGenerator(style: .medium).impactOccurred() }
-            self?.onSend?()
-        }, for: .touchUpInside)
+        let toneSlot = Self.slot(toneButton)
+        Self.fill(undoSlot, with: undoButton)
+        let aiSlot = Self.slot(aiButton)
 
-        let aiWrap = UIView()
-        aiButton.translatesAutoresizingMaskIntoConstraints = false
-        aiWrap.addSubview(aiButton)
-        NSLayoutConstraint.activate([
-            aiButton.centerYAnchor.constraint(equalTo: aiWrap.centerYAnchor),
-            aiButton.leadingAnchor.constraint(equalTo: aiWrap.leadingAnchor),
-            aiButton.trailingAnchor.constraint(equalTo: aiWrap.trailingAnchor),
-            aiButton.heightAnchor.constraint(equalToConstant: 24),
-            aiWrap.widthAnchor.constraint(equalToConstant: 38),
-        ])
-
-        let stack = UIStackView(arrangedSubviews: [toneButton, label, clearButton, aiWrap, sendButton])
+        let stack = UIStackView(arrangedSubviews: [toneSlot, label, undoSlot, aiSlot])
         stack.axis = .horizontal
         stack.alignment = .fill
-        stack.spacing = 4
+        stack.spacing = 8
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
 
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
-            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6),
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
             stack.topAnchor.constraint(equalTo: topAnchor, constant: overhang),
             stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
-            toneButton.widthAnchor.constraint(equalToConstant: 36),
-            clearButton.widthAnchor.constraint(equalToConstant: 32),
-            sendButton.widthAnchor.constraint(equalToConstant: 36),
         ])
-        toneButton.setContentCompressionResistancePriority(.required, for: .horizontal)
         let rule = UIView()
         rule.backgroundColor = KeyboardTheme.accent.withAlphaComponent(0.6)
         rule.translatesAutoresizingMaskIntoConstraints = false
@@ -117,11 +108,28 @@ final class SuggestionBarView: UIView {
             rule.heightAnchor.constraint(equalToConstant: 1),
         ])
         applyAIAppearance()
-        updateSendButton()
         set(.idle)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) not used") }
+
+    private static func slot(_ b: UIButton) -> UIView {
+        let v = UIView()
+        fill(v, with: b)
+        return v
+    }
+
+    private static func fill(_ slot: UIView, with b: UIButton) {
+        b.translatesAutoresizingMaskIntoConstraints = false
+        slot.addSubview(b)
+        NSLayoutConstraint.activate([
+            slot.widthAnchor.constraint(equalToConstant: circle),
+            b.widthAnchor.constraint(equalToConstant: circle),
+            b.heightAnchor.constraint(equalToConstant: circle),
+            b.centerXAnchor.constraint(equalTo: slot.centerXAnchor),
+            b.centerYAnchor.constraint(equalTo: slot.centerYAnchor),
+        ])
+    }
 
     override func layoutSubviews() {
         super.layoutSubviews()
@@ -141,13 +149,8 @@ final class SuggestionBarView: UIView {
         }
     }
 
-    /// Always visible while AI is on; dimmed when there is nothing to send.
-    private func updateSendButton() {
-        sendButton.isHidden = !aiEnabled
-        let ready = !composing.isEmpty
-        sendButton.alpha = ready ? 1 : 0.35
-        sendButton.isEnabled = ready
-    }
+    /// Shown right after a conversion was applied, so it can be undone.
+    func setUndoAvailable(_ on: Bool) { undoSlot.isHidden = !on || !aiEnabled }
 
     private func applyAIAppearance() {
         UIView.performWithoutAnimation {
@@ -163,7 +166,6 @@ final class SuggestionBarView: UIView {
                 toneButton.alpha = 0.35
             }
             toneButton.isUserInteractionEnabled = aiEnabled
-            updateSendButton()
         }
     }
 
@@ -176,7 +178,7 @@ final class SuggestionBarView: UIView {
             case .academic: symbol = "graduationcap"
             case .slang: symbol = "bubble.left.and.text.bubble.right"
             }
-            toneButton.setImage(UIImage(systemName: symbol, withConfiguration: UIImage.SymbolConfiguration(pointSize: 15, weight: .medium)), for: .normal)
+            toneButton.setImage(UIImage(systemName: symbol, withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .regular)), for: .normal)
             toneButton.accessibilityLabel = tone.label
             toneButton.layoutIfNeeded()
         }
@@ -193,8 +195,6 @@ final class SuggestionBarView: UIView {
     func setComposing(_ text: String, caret: Int) {
         composing = text
         self.caret = max(0, min(caret, text.count))
-        clearButton.isHidden = !(aiEnabled && !text.isEmpty)
-        updateSendButton()
         render()
     }
 
@@ -209,8 +209,13 @@ final class SuggestionBarView: UIView {
         switch newState {
         case .idle:
             let target = AppSettings.targetLanguage.hintName
-            statusText = L("입력하면 \(tone.adjective) \(target) 원어민 표현으로 바꿔요", "Type to get a \(tone.adjective) native \(target) version")
-            statusColor = .tertiaryLabel
+            if canPaste {
+                statusText = L("탭하여 붙여넣고 \(target)로 변환", "Tap to paste and convert to \(target)")
+                statusColor = .secondaryLabel
+            } else {
+                statusText = L("입력하면 \(tone.adjective) \(target) 원어민 표현으로 바꿔요", "Type to get a \(tone.adjective) native \(target) version")
+                statusColor = .tertiaryLabel
+            }
         case .loading:
             statusText = "…"; statusColor = .secondaryLabel
         case .result(let text):
@@ -306,6 +311,11 @@ final class SuggestionBarView: UIView {
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.96, green: 0.72, blue: 0.70, alpha: 1)
             : UIColor(red: 0.78, green: 0.45, blue: 0.43, alpha: 1)
+    }
+
+    @objc private func labelLongPressed(_ g: UILongPressGestureRecognizer) {
+        guard aiEnabled, g.state == .began else { return }
+        onPaste?()
     }
 
     @objc private func labelTapped(_ g: UITapGestureRecognizer) {
