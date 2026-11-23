@@ -120,6 +120,7 @@ final class KeyboardViewController: UIInputViewController {
         bar.onToneTap = { [weak self] in self?.cycleTone() }
         bar.onAIToggle = { [weak self] in self?.toggleAI() }
         bar.onUndo = { [weak self] in self?.undoApply() }
+        bar.onCaretTap = { [weak self] in self?.moveHostCursor(to: $0) }
         bar.onStateChange = { [weak self] in self?.updateReturnLabel() }
 
         rebuildKeys()
@@ -148,6 +149,7 @@ final class KeyboardViewController: UIInputViewController {
         }
         finishWord()
         refreshPasteHint()
+        refreshMirror()
         heightConstraint.constant = currentHeight()
         bar.set(.idle)
         updateAutoShift()
@@ -160,11 +162,69 @@ final class KeyboardViewController: UIInputViewController {
         guard Date() > ownUntil, !syncPending else { return }
         updateAutoShift()
         refreshPasteHint()
+        scheduleMirror()
         // The cursor was moved (or the field changed) behind our back: the word buffer no longer matches the field.
         if !shown.isEmpty, Date() > ownUntil {
             let before = textDocumentProxy.documentContextBeforeInput ?? ""
             if !before.hasSuffix(shown) { finishWord() }
         }
+    }
+
+    // MARK: - Typed-text mirror in the bar
+
+    private var mirrorTimer: Timer?
+    private var mirrorText = ""
+    private var mirrorCaret = 0
+    private var mirrorMovable = true
+
+    /// Reading the field is slow, so the bar catches up a moment after typing pauses.
+    private func scheduleMirror() {
+        mirrorTimer?.invalidate()
+        mirrorTimer = Timer.scheduledTimer(withTimeInterval: 0.12, repeats: false) { [weak self] _ in
+            self?.refreshMirror()
+        }
+    }
+
+    /// Shows the sentence around the cursor (what is in the host field) with a caret in the bar.
+    private func refreshMirror() {
+        mirrorTimer?.invalidate()
+        guard aiOn else {
+            mirrorText = ""; mirrorCaret = 0
+            bar.setComposing("", caret: 0)
+            return
+        }
+        flushSync()
+        if let sel = textDocumentProxy.selectedText, !sel.isEmpty {
+            mirrorText = sel; mirrorCaret = sel.count; mirrorMovable = false
+        } else {
+            let ends: Set<Character> = [".", "!", "?", "。", "！", "？", "\n"]
+            let before = textDocumentProxy.documentContextBeforeInput ?? ""
+            let after = textDocumentProxy.documentContextAfterInput ?? ""
+            let headText = sentenceHead(of: before)
+            var tail = ""
+            for ch in after {
+                if ch == "\n" { break }
+                tail.append(ch)
+                if ends.contains(ch) { break }
+            }
+            mirrorText = headText + tail
+            mirrorCaret = headText.count
+            mirrorMovable = true
+        }
+        bar.setComposing(mirrorText, caret: mirrorCaret)
+    }
+
+    /// A tap on the typed text in the bar moves the cursor in the host field to that spot.
+    private func moveHostCursor(to index: Int) {
+        guard mirrorMovable else { return }
+        let offset = index - mirrorCaret
+        guard offset != 0 else { return }
+        invalidateSuggestion()
+        finishWord()
+        ownUntil = Date().addingTimeInterval(0.5)
+        textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
+        mirrorCaret = index
+        bar.setComposing(mirrorText, caret: index)
     }
 
     // MARK: - Paste
@@ -193,6 +253,7 @@ final class KeyboardViewController: UIInputViewController {
         finishWord()
         ownInsert(text)
         bar.canPaste = false
+        scheduleMirror()
         // Give the host a moment to report the new text before reading the sentence back.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in self?.triggerRewrite() }
     }
@@ -255,11 +316,22 @@ final class KeyboardViewController: UIInputViewController {
     private func currentLine() -> String {
         flushSync()
         if let sel = textDocumentProxy.selectedText, !sel.isEmpty { return sel }
-        let before = textDocumentProxy.documentContextBeforeInput ?? ""
-        let ends: Set<Character> = [".", "!", "?", "。", "！", "？", "\n"]
+        return sentenceHead(of: textDocumentProxy.documentContextBeforeInput ?? "")
+    }
+
+    /// The sentence being typed: everything after the previous sentence end or line break. Sentence-ending marks
+    /// and spaces at the very end still belong to it, so "…です。" is converted as a whole instead of vanishing.
+    private func sentenceHead(of before: String) -> String {
+        let enders: Set<Character> = [".", "!", "?", "。", "！", "？"]
+        var core = Substring(before)
+        while let last = core.last, last != "\n", enders.contains(last) || last == " " || last == "\u{3000}" {
+            core = core.dropLast()
+        }
         var seg = Substring(before)
-        if let idx = before.lastIndex(where: { ends.contains($0) }) { seg = before[before.index(after: idx)...] }
-        return String(seg.drop(while: { $0 == " " || $0 == "\t" }))
+        if let i = core.lastIndex(where: { enders.contains($0) || $0 == "\n" }) {
+            seg = before[before.index(after: i)...]
+        }
+        return String(seg.drop(while: { $0 == " " || $0 == "\t" || $0 == "\u{3000}" }))
     }
 
     /// `auto` = fired by the typing-pause timer (quiet about empty/short input); otherwise by tapping the bar.
@@ -353,6 +425,7 @@ final class KeyboardViewController: UIInputViewController {
         lastApplied = (p.original, output)
         bar.setUndoAvailable(true)
         updateAutoShift()
+        scheduleMirror()
     }
 
     private func undoApply() {
@@ -365,6 +438,7 @@ final class KeyboardViewController: UIInputViewController {
         ownInsert(a.original)
         bar.set(.idle)
         updateAutoShift()
+        scheduleMirror()
     }
 
     private func invalidateSuggestion() {
@@ -390,6 +464,7 @@ final class KeyboardViewController: UIInputViewController {
 
     /// SmartBoard-style: once typing pauses, a natural version appears above the keys by itself.
     private func scheduleAutoSuggest() {
+        scheduleMirror()
         autoTimer?.invalidate()
         guard aiOn, AppSettings.autoSuggest, hasFullAccess else { return }
         autoTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
@@ -497,6 +572,7 @@ final class KeyboardViewController: UIInputViewController {
         bar.aiEnabled = AppSettings.aiEnabled
         pending = nil
         bar.set(.idle)
+        refreshMirror()
     }
 
     private func toggleLanguage() {
@@ -609,15 +685,7 @@ final class KeyboardViewController: UIInputViewController {
             self.updateAutoShift()
         }
         let langList = availableLanguages.isEmpty ? languages() : availableLanguages
-        let nextLang = langList[((langList.firstIndex(of: language) ?? 0) + 1) % langList.count]
-        let nextKey: String
-        switch nextLang {
-        case .english: nextKey = "EN"
-        case .korean: nextKey = InputLanguage.korean.keyLabel
-        case .japanese: nextKey = InputLanguage.japanese.keyLabel
-        case .chinese: nextKey = InputLanguage.chinese.keyLabel
-        }
-        let langKey = KeyButton(title: nextKey, style: .special, fontSize: 16)
+        let langKey = KeyButton(symbol: "globe", style: .special)
         langKey.onTap = { [weak self] in self?.toggleLanguage() }
         let spaceTitle: String
         switch language {
@@ -645,17 +713,6 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     // MARK: - Japanese kana (12-key flick) layout
-
-    private func nextLanguageLabel() -> String {
-        let list = availableLanguages.isEmpty ? languages() : availableLanguages
-        let next = list[((list.firstIndex(of: language) ?? 0) + 1) % list.count]
-        switch next {
-        case .english: return "EN"
-        case .korean: return InputLanguage.korean.keyLabel
-        case .japanese: return InputLanguage.japanese.keyLabel
-        case .chinese: return InputLanguage.chinese.keyLabel
-        }
-    }
 
     private func makeFlick(_ chars: [String]) -> FlickKey {
         let k = FlickKey(chars: chars)
@@ -758,7 +815,7 @@ final class KeyboardViewController: UIInputViewController {
         left.onTap = { [weak self] in self?.moveCursor(-1) }
         let right = KeyButton(symbol: "chevron.right", style: .special)
         right.onTap = { [weak self] in self?.moveCursor(1) }
-        let lang = KeyButton(title: nextLanguageLabel(), style: .special, fontSize: 16)
+        let lang = KeyButton(symbol: "globe", style: .special)
         lang.onTap = { [weak self] in self?.toggleLanguage() }
         let leftCol = vstack([num, left, right, lang])
 

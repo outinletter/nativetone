@@ -36,6 +36,8 @@ final class SuggestionBarView: UIView {
     private let toneButton = UIButton(type: .system)
     private let undoButton = UIButton(type: .system)
     private let undoSlot = UIView()
+    private let applyButton = UIButton(type: .system)
+    private let applySlot = UIView()
     private static let circle: CGFloat = 30
 
     private var shownKey = ""
@@ -74,17 +76,32 @@ final class SuggestionBarView: UIView {
         undoButton.tintColor = KeyboardTheme.onAccent
         undoButton.backgroundColor = KeyboardTheme.accent
         undoButton.layer.cornerRadius = d / 2
+        undoButton.layer.borderWidth = 1.5
+        undoButton.layer.borderColor = KeyboardTheme.accent.cgColor
         undoButton.addAction(UIAction { [weak self] _ in
             Haptics.tap()
             self?.onUndo?()
         }, for: .touchUpInside)
         undoSlot.isHidden = true
 
+        applyButton.setImage(UIImage(systemName: "arrow.up", withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold)), for: .normal)
+        applyButton.tintColor = KeyboardTheme.onAccent
+        applyButton.backgroundColor = KeyboardTheme.accent
+        applyButton.layer.cornerRadius = d / 2
+        applyButton.layer.borderWidth = 1.5
+        applyButton.layer.borderColor = KeyboardTheme.accent.cgColor
+        applyButton.addAction(UIAction { [weak self] _ in
+            Haptics.tap()
+            self?.onApply?()
+        }, for: .touchUpInside)
+        Self.fill(applySlot, with: applyButton)
+        updateApplyButton()
+
         let toneSlot = Self.slot(toneButton)
         Self.fill(undoSlot, with: undoButton)
         let aiSlot = Self.slot(aiButton)
 
-        let stack = UIStackView(arrangedSubviews: [toneSlot, label, undoSlot, aiSlot])
+        let stack = UIStackView(arrangedSubviews: [toneSlot, label, undoSlot, aiSlot, applySlot])
         stack.axis = .horizontal
         stack.alignment = .fill
         stack.spacing = 8
@@ -153,6 +170,7 @@ final class SuggestionBarView: UIView {
     func setUndoAvailable(_ on: Bool) { undoSlot.isHidden = !on || !aiEnabled }
 
     private func applyAIAppearance() {
+        updateApplyButton()
         UIView.performWithoutAnimation {
             if aiEnabled {
                 aiButton.backgroundColor = KeyboardTheme.accent
@@ -169,16 +187,48 @@ final class SuggestionBarView: UIView {
         }
     }
 
+    /// Always shown at the far right while AI is on; lit only when a suggestion is ready to apply.
+    private func updateApplyButton() {
+        applySlot.isHidden = !aiEnabled
+        var ready = false
+        if case .result = state { ready = true }
+        applyButton.isEnabled = ready
+        applyButton.alpha = ready ? 1 : 0.35
+    }
+
+    /// Outline smiley drawn by hand so it is never rendered as a filled symbol.
+    private static func outlineSmiley(diameter d: CGFloat = 19) -> UIImage {
+        let line: CGFloat = 1.5
+        let img = UIGraphicsImageRenderer(size: CGSize(width: d + 2, height: d + 2)).image { _ in
+            let c = CGPoint(x: (d + 2) / 2, y: (d + 2) / 2)
+            let r = d / 2 - line / 2
+            UIColor.black.setStroke()
+            let face = UIBezierPath(arcCenter: c, radius: r, startAngle: 0, endAngle: .pi * 2, clockwise: true)
+            face.lineWidth = line; face.stroke()
+            let smile = UIBezierPath(arcCenter: CGPoint(x: c.x, y: c.y + r * 0.05), radius: r * 0.52,
+                                     startAngle: .pi * 0.18, endAngle: .pi * 0.82, clockwise: true)
+            smile.lineWidth = line; smile.lineCapStyle = .round; smile.stroke()
+            UIColor.black.setFill()
+            for dx in [-r * 0.36, r * 0.36] {
+                UIBezierPath(arcCenter: CGPoint(x: c.x + dx, y: c.y - r * 0.28), radius: 1.3, startAngle: 0, endAngle: .pi * 2, clockwise: true).fill()
+            }
+        }
+        return img.withRenderingMode(.alwaysTemplate)
+    }
+
     func setTone(_ tone: Tone) {
         self.tone = tone
         UIView.performWithoutAnimation {
             let symbol: String
             switch tone {
-            case .casual: symbol = "face.smiling"
+            case .casual: symbol = "smiley"
             case .academic: symbol = "graduationcap"
-            case .slang: symbol = "bubble.left.and.text.bubble.right"
+            case .slang: symbol = "bubble.left.and.bubble.right"
             }
-            toneButton.setImage(UIImage(systemName: symbol, withConfiguration: UIImage.SymbolConfiguration(pointSize: 14, weight: .regular)), for: .normal)
+            let icon: UIImage? = tone == .casual
+                ? Self.outlineSmiley()
+                : UIImage(systemName: symbol, withConfiguration: UIImage.SymbolConfiguration(pointSize: 16, weight: .regular, scale: .medium))
+            toneButton.setImage(icon, for: .normal)
             toneButton.accessibilityLabel = tone.label
             toneButton.layoutIfNeeded()
         }
@@ -204,7 +254,7 @@ final class SuggestionBarView: UIView {
 
     func set(_ newState: State) {
         state = newState
-        defer { onStateChange?() }
+        defer { onStateChange?(); updateApplyButton() }
         statusIsMessage = false
         switch newState {
         case .idle:
@@ -219,7 +269,7 @@ final class SuggestionBarView: UIView {
         case .loading:
             statusText = "…"; statusColor = .secondaryLabel
         case .result(let text):
-            statusText = text; statusColor = .label
+            statusText = text; statusColor = KeyboardTheme.accent
         case .ok(let text):
             statusText = text; statusColor = .secondaryLabel
         case .message(let text):
@@ -228,7 +278,8 @@ final class SuggestionBarView: UIView {
         render()
     }
 
-    private static let composeFont = UIFont.systemFont(ofSize: 18)
+    /// Typed text and the converted suggestion share this size.
+    private static let composeFont = UIFont.systemFont(ofSize: 16)
     private static let caretWidth: CGFloat = 2
 
     private var showsResult: Bool { if case .result = state { return !composing.isEmpty }; return false }
@@ -257,7 +308,9 @@ final class SuggestionBarView: UIView {
             attributed = out
             key = "c|\(composing)|\(caret)|\(windowStart)"
         } else {
-            attributed = NSAttributedString(string: statusText, attributes: [.font: UIFont.systemFont(ofSize: 15), .foregroundColor: statusColor])
+            var isResult = false
+            if case .result = state { isResult = true }
+            attributed = NSAttributedString(string: statusText, attributes: [.font: isResult ? Self.composeFont : UIFont.systemFont(ofSize: 15), .foregroundColor: statusColor])
             key = "s|\(statusText)|\(statusColor.hash)"
         }
         if key == shownKey { return }
@@ -320,7 +373,7 @@ final class SuggestionBarView: UIView {
 
     @objc private func labelTapped(_ g: UITapGestureRecognizer) {
         guard aiEnabled else { return }
-        if showsResult { onCaretTap?(composing.count); return }   // back to the typed text
+        if showsResult { onApply?(); return }   // tapping the suggestion applies it, same as the arrow button
         if showsComposing {
             onCaretTap?(characterIndex(atX: g.location(in: label).x))
             return
