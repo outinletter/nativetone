@@ -15,9 +15,16 @@ struct RootView: View {
     @State private var haptics = AppSettings.haptics
     @State private var autoCapitalize = AppSettings.autoCapitalize
     @State private var saveHistory = AppSettings.saveHistory
-    @State private var copiedID: UUID?
+    @State private var targetLanguage = AppSettings.targetLanguage
 
     var body: some View {
+        NavigationStack {
+            content
+                .toolbar(.hidden, for: .navigationBar)
+        }
+    }
+
+    private var content: some View {
         List {
             header
             setupSection
@@ -37,6 +44,7 @@ struct RootView: View {
             NotificationCenter.default.post(name: .uiLanguageChanged, object: nil)
         }
         .onChange(of: tone) { AppSettings.tone = $1 }
+        .onChange(of: targetLanguage) { AppSettings.targetLanguage = $1 }
         .onChange(of: autoSuggest) { AppSettings.autoSuggest = $1 }
         .onChange(of: japaneseLayout) { AppSettings.japaneseLayout = $1 }
         .onChange(of: keyboardHeight) { AppSettings.keyboardHeight = $1 }
@@ -87,11 +95,16 @@ struct RootView: View {
             Picker(L("앱 언어", "App language"), selection: $uiLanguage) {
                 ForEach(AppLanguage.allCases) { Text($0.nativeName).tag($0) }
             }
+            Picker(L("교정 언어", "Rewrite language"), selection: $targetLanguage) {
+                ForEach(TargetLanguage.allCases) { Text($0.nativeName).tag($0) }
+            }
             Picker(L("기본 톤", "Default tone"), selection: $tone) {
                 ForEach(Tone.allCases) { Text($0.label).tag($0) }
             }
         } header: {
             Theme.eyebrow(L("일반", "General"))
+        } footer: {
+            Text(L("입력한 문장이 선택한 언어의 자연스러운 원어민 표현으로 바뀌어요.", "Your text is rewritten as natural, native-sounding text in the selected language."))
         }
         .listRowBackground(Theme.surface)
     }
@@ -127,32 +140,20 @@ struct RootView: View {
     private var historySection: some View {
         Section {
             Toggle(L("기록 저장", "Save history"), isOn: $saveHistory)
-            if history.items.isEmpty {
-                Text(L("아직 기록이 없어요.", "No history yet."))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(history.items) { item in
-                    row(item)
-                        // Swipe left to delete; a full swipe deletes immediately.
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button(role: .destructive) { history.delete([item.id]) } label: {
-                                Label(L("삭제", "Delete"), systemImage: "trash")
-                            }
-                        }
+            NavigationLink {
+                HistoryPage(history: history)
+            } label: {
+                HStack {
+                    Text(L("기록 보기", "View history"))
+                    Spacer()
+                    Text("\(history.items.count)")
+                        .foregroundStyle(.secondary)
                 }
             }
         } header: {
-            HStack {
-                Theme.eyebrow(L("기록", "History"))
-                Spacer()
-                if !history.items.isEmpty {
-                    Button(L("비우기", "Clear"), role: .destructive) { history.clear() }
-                        .font(.caption)
-                }
-            }
+            Theme.eyebrow(L("기록", "History"))
         } footer: {
-            Text(L("변환된 문장만 이 기기에 저장해요. 입력한 원문은 저장하지 않고, 왼쪽으로 밀어 삭제할 수 있어요.", "Only the converted sentence is saved, on this device. Your original text is never saved. Swipe left to delete."))
+            Text(L("변환된 문장만 이 기기에 저장해요. 입력한 원문은 저장하지 않아요.", "Only the converted sentence is saved, on this device. Your original text is never saved."))
         }
         .listRowBackground(Theme.surface)
     }
@@ -183,42 +184,5 @@ struct RootView: View {
             }
         }
         .padding(.vertical, 2)
-    }
-
-    private func row(_ item: HistoryItem) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if !item.original.isEmpty {
-                Text(item.original)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
-            HStack(alignment: .top) {
-                Text(item.result.best)
-                    .font(Theme.serif(18))
-                    .lineSpacing(3)
-                Spacer()
-                Button { history.toggleFavorite(item) } label: {
-                    Image(systemName: item.isFavorite ? "bookmark.fill" : "bookmark")
-                        .foregroundStyle(item.isFavorite ? Theme.gold : .secondary)
-                }
-                .buttonStyle(.plain)
-            }
-            HStack(spacing: 8) {
-                Text(item.tone.label.uppercased()).tracking(1.2)
-                Text(item.date, style: .date)
-                Spacer()
-                Text(copiedID == item.id ? L("복사됨", "Copied") : L("탭하여 복사", "Tap to copy"))
-                    .foregroundStyle(copiedID == item.id ? Theme.gold : Color.secondary)
-            }
-            .font(.system(size: 11, weight: .medium))
-            .foregroundStyle(.tertiary)
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            UIPasteboard.general.string = item.result.best
-            copiedID = item.id
-        }
-        .padding(.vertical, 6)
     }
 }

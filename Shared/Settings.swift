@@ -6,6 +6,41 @@ struct KeyboardRecord: Codable {
     let date: Date
 }
 
+/// Language the text is rewritten into (default English).
+enum TargetLanguage: String, CaseIterable, Identifiable {
+    case english, korean, japanese, chinese, spanish
+    var id: String { rawValue }
+    /// Name sent to the server prompt.
+    var promptName: String {
+        switch self {
+        case .english: return "English"
+        case .korean: return "Korean"
+        case .japanese: return "Japanese"
+        case .chinese: return "Chinese"
+        case .spanish: return "Spanish"
+        }
+    }
+    var nativeName: String {
+        switch self {
+        case .english: return "English"
+        case .korean: return "한국어"
+        case .japanese: return "日本語"
+        case .chinese: return "中文"
+        case .spanish: return "Español"
+        }
+    }
+    /// Name used inside the keyboard hint, in the app language.
+    var hintName: String {
+        switch self {
+        case .english: return L("영어", "English")
+        case .korean: return L("한국어", "Korean")
+        case .japanese: return L("일본어", "Japanese")
+        case .chinese: return L("중국어", "Chinese")
+        case .spanish: return L("스페인어", "Spanish")
+        }
+    }
+}
+
 /// Japanese keyboard layout.
 enum JapaneseLayout: String, CaseIterable, Identifiable {
     case kana, romaji
@@ -94,11 +129,17 @@ enum AppSettings {
         static let uiLanguage = "uiLanguage"
         static let saveHistory = "saveHistory"
         static let japaneseLayout = "japaneseLayout"
+        static let targetLanguage = "targetLanguage"
         static let keyboardQueue = "keyboardQueue"
         static let inputLanguages = "inputLanguages"
         static let keyboardHeight = "keyboardHeight"
         static let haptics = "haptics"
         static let autoCapitalize = "autoCapitalize"
+    }
+
+    static var targetLanguage: TargetLanguage {
+        get { TargetLanguage(rawValue: defaults.string(forKey: Key.targetLanguage) ?? "") ?? .english }
+        set { defaults.set(newValue.rawValue, forKey: Key.targetLanguage) }
     }
 
     static var japaneseLayout: JapaneseLayout {

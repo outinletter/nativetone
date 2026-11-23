@@ -75,7 +75,8 @@ final class SuggestionBarView: UIView {
         defer { onStateChange?() }
         switch newState {
         case .idle:
-            statusText = L("입력하면 \(tone.adjective) 원어민 표현으로 바꿔요", "Type to get a \(tone.adjective) native-speaker version")
+            let target = AppSettings.targetLanguage.hintName
+            statusText = L("입력하면 \(tone.adjective) \(target) 원어민 표현으로 바꿔요", "Type to get a \(tone.adjective) native \(target) version")
             statusColor = .tertiaryLabel
             statusIsHint = true
         case .loading:

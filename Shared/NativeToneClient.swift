@@ -32,6 +32,7 @@ final class NativeToneClient {
         let uiLanguage: String
         let fast: Bool
         let source: String?
+        let target: String
     }
 
     private struct ErrorBody: Decodable { let error: String }
@@ -63,7 +64,8 @@ final class NativeToneClient {
             explainLanguage: explainLanguage.promptName,
             uiLanguage: AppSettings.uiLanguage.rawValue,
             fast: fast,
-            source: source
+            source: source,
+            target: AppSettings.targetLanguage.promptName
         ))
 
         let data: Data

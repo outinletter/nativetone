@@ -171,7 +171,7 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         let selectedTone = tone
-        let cacheKey = "fast|\(sourceCode ?? "en")|\(selectedTone.rawValue)|\(AppSettings.explainLanguage.rawValue)|\(trimmed)"
+        let cacheKey = "fast|\(AppSettings.targetLanguage.rawValue)|\(sourceCode ?? "en")|\(selectedTone.rawValue)|\(AppSettings.explainLanguage.rawValue)|\(trimmed)"
         task?.cancel()
         pending = nil
 
