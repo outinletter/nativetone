@@ -91,7 +91,7 @@ final class SuggestionBarView: UIView {
             stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
             stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -2),
             stack.topAnchor.constraint(equalTo: topAnchor, constant: overhang),
-            stack.bottomAnchor.constraint(equalTo: bottomAnchor),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
             toneButton.widthAnchor.constraint(equalToConstant: 44),
             clearButton.widthAnchor.constraint(equalToConstant: 32),
         ])

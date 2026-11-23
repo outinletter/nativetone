@@ -8,7 +8,7 @@ final class KeyboardViewController: UIInputViewController {
         let result: RewriteResult
     }
 
-    private static let barHeight: CGFloat = 34
+    private static let barHeight: CGFloat = 40
     private static let barOverhang: CGFloat = 17
     private let bar = SuggestionBarView(overhang: KeyboardViewController.barOverhang)
     private let keysStack = UIStackView()
