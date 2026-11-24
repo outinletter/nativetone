@@ -315,14 +315,17 @@ final class SuggestionBarView: UIView, UIGestureRecognizerDelegate {
 
     /// Highlights the selected characters of the typed text (nil clears it).
     func setSelection(_ r: Range<Int>?) {
+        if r == selection { return }
         selection = r
         render()
     }
 
     /// Text being composed (Korean / Japanese / Chinese / English) and the caret position inside it.
     func setComposing(_ text: String, caret: Int) {
+        let newCaret = max(0, min(caret, text.count))
+        if text == composing, newCaret == self.caret { return }     // nothing changed: skip the text layout work
         composing = text
-        self.caret = max(0, min(caret, text.count))
+        self.caret = newCaret
         updateClearButton()
         render()
     }

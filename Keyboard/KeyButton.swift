@@ -85,6 +85,12 @@ final class KeyButton: UIButton {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) not used") }
 
+    /// A fixed shadow path keeps the key shadow out of the slow off-screen rendering pass on every touch.
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        layer.shadowPath = UIBezierPath(roundedRect: bounds, cornerRadius: layer.cornerRadius).cgPath
+    }
+
     override var isHighlighted: Bool {
         didSet { alpha = isHighlighted ? 0.6 : 1 }
     }
@@ -96,20 +102,25 @@ final class KeyButton: UIButton {
 
     /// iOS-style key preview bubble above the pressed character key.
     private func showPopup() {
-        guard style == .letter, let t = title(for: .normal), t.count == 1, popup == nil else { return }
-        let l = UILabel()
+        guard style == .letter, let t = title(for: .normal), t.count == 1 else { return }
+        // The bubble is built once per key and only shown or hidden afterwards.
+        if popup == nil {
+            let l = UILabel()
+            l.font = .systemFont(ofSize: 34)
+            l.textColor = .label
+            l.textAlignment = .center
+            l.backgroundColor = KeyboardTheme.letterKey
+            l.layer.cornerRadius = 8
+            l.isHidden = true
+            addSubview(l)
+            popup = l
+        }
+        guard let l = popup else { return }
         l.text = t
-        l.font = .systemFont(ofSize: 34)
-        l.textColor = .label
-        l.textAlignment = .center
-        l.backgroundColor = KeyboardTheme.letterKey
-        l.layer.cornerRadius = 8
-        l.layer.masksToBounds = true
         let h = bounds.height * 1.15
         l.frame = CGRect(x: -bounds.width * 0.25, y: -h - 4, width: bounds.width * 1.5, height: h)
-        addSubview(l)
+        l.isHidden = false
         layer.zPosition = 10
-        popup = l
     }
 
     private var savedTitle: String?
@@ -126,7 +137,7 @@ final class KeyButton: UIButton {
     }
 
     private func hidePopup() {
-        popup?.removeFromSuperview(); popup = nil
+        popup?.isHidden = true
         layer.zPosition = 0
     }
 

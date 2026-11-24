@@ -59,7 +59,7 @@ struct HistoryPage: View {
                         }
                     } label: {
                         HStack {
-                            Text(title(for: group.day)).font(Theme.serif(17, .semibold))
+                            Text(title(for: group.day)).font(.headline)
                             Spacer()
                             Text("\(group.items.count)").font(.subheadline).foregroundStyle(.secondary)
                             Image(systemName: "chevron.right")
@@ -140,7 +140,7 @@ struct HistoryPage: View {
             }
             HStack(alignment: .top) {
                 Text(item.result.best)
-                    .font(Theme.serif(18))
+                    .font(.body)
                     .lineSpacing(1)
             }
         }

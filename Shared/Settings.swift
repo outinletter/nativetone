@@ -132,6 +132,7 @@ enum AppSettings {
         static let targetLanguage = "targetLanguage"
         static let composeEnglish = "composeEnglish"
         static let aiEnabled = "aiEnabled"
+        static let lastLanguage = "lastLanguage"
         static let keyboardQueue = "keyboardQueue"
         static let inputLanguages = "inputLanguages"
         static let keyboardHeight = "keyboardHeight"
@@ -143,6 +144,12 @@ enum AppSettings {
     static var aiEnabled: Bool {
         get { defaults.object(forKey: Key.aiEnabled) as? Bool ?? true }
         set { defaults.set(newValue, forKey: Key.aiEnabled) }
+    }
+
+    /// The keyboard layout used last ("english", "korean", "japanese", "chinese"), restored the next time it opens.
+    static var lastLanguage: String {
+        get { defaults.string(forKey: Key.lastLanguage) ?? "english" }
+        set { defaults.set(newValue, forKey: Key.lastLanguage) }
     }
 
     /// English typing also goes through the top bar and is converted live (default on).

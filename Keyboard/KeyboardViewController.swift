@@ -21,6 +21,26 @@ final class KeyboardViewController: UIInputViewController {
     private enum Language { case english, korean, japanese, chinese }
     private var language: Language = .english
     private var availableLanguages: [Language] = []
+    private var restoredLanguage = false
+
+    private static func language(named name: String) -> Language? {
+        switch name {
+        case "english": return .english
+        case "korean": return .korean
+        case "japanese": return .japanese
+        case "chinese": return .chinese
+        default: return nil
+        }
+    }
+
+    private var languageName: String {
+        switch language {
+        case .english: return "english"
+        case .korean: return "korean"
+        case .japanese: return "japanese"
+        case .chinese: return "chinese"
+        }
+    }
     private var kanaMode = AppSettings.japaneseLayout == .kana
     private var composer = HangulComposer()
     private var latin = LatinComposer()
@@ -146,6 +166,13 @@ final class KeyboardViewController: UIInputViewController {
         let langs = languages()
         if langs != availableLanguages {
             availableLanguages = langs
+            if !restoredLanguage {
+                restoredLanguage = true
+                if let saved = Self.language(named: AppSettings.lastLanguage), langs.contains(saved) {
+                    language = saved
+                    latin.japanese = saved == .japanese
+                }
+            }
             if !langs.contains(language) {
                 language = .english
                 composeClear()
@@ -225,7 +252,8 @@ final class KeyboardViewController: UIInputViewController {
     /// Typing, delete or paste over a selection removes it from the field first. Returns true if something was removed.
     @discardableResult
     private func deleteSelection() -> Bool {
-        guard let sel = selection, sel.upperBound <= mirrorText.count else { setSelection(nil); return false }
+        guard let sel = selection else { return false }          // the common case: do nothing, and nothing redraws
+        guard sel.upperBound <= mirrorText.count else { setSelection(nil); return false }
         finishWord()
         let offset = sel.upperBound - mirrorCaret
         if offset != 0 {
@@ -730,6 +758,7 @@ final class KeyboardViewController: UIInputViewController {
         let list = availableLanguages.isEmpty ? languages() : availableLanguages
         let i = list.firstIndex(of: language) ?? 0
         language = list[(i + 1) % list.count]
+        AppSettings.lastLanguage = languageName
         latin.japanese = language == .japanese
         finishWord()
         invalidateSuggestion()
