@@ -85,6 +85,11 @@ final class KeyboardViewController: UIInputViewController {
     }
     private var heightConstraint: NSLayoutConstraint!
     private weak var numberRow: UIStackView?
+    private var keysTop: NSLayoutConstraint!
+    /// Vertical gap between key rows.
+    private static let rowGap: CGFloat = 7
+    /// Extra space between the top bar and the number row.
+    private static let numberRowGap: CGFloat = 8
     private var returnButton: KeyButton?
     private static let shiftedJamo: [String: String] = [
         "ㅂ": "ㅃ", "ㅈ": "ㅉ", "ㄷ": "ㄸ", "ㄱ": "ㄲ", "ㅅ": "ㅆ", "ㅐ": "ㅒ", "ㅔ": "ㅖ",
@@ -112,12 +117,13 @@ final class KeyboardViewController: UIInputViewController {
 
         bar.translatesAutoresizingMaskIntoConstraints = false
         keysStack.axis = .vertical
-        keysStack.spacing = 10
+        keysStack.spacing = Self.rowGap
         keysStack.distribution = .fillEqually
         keysStack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(bar)
         view.addSubview(keysStack)
 
+        keysTop = keysStack.topAnchor.constraint(equalTo: bar.bottomAnchor, constant: 4)
         heightConstraint = view.heightAnchor.constraint(equalToConstant: currentHeight())
         heightConstraint.priority = .init(999)
         NSLayoutConstraint.activate([
@@ -127,7 +133,7 @@ final class KeyboardViewController: UIInputViewController {
             bar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             bar.heightAnchor.constraint(equalToConstant: Self.barHeight + Self.barOverhang),
-            keysStack.topAnchor.constraint(equalTo: bar.bottomAnchor, constant: 4),
+            keysTop,
             keysStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 3),
             keysStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -3),
             keysStack.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -4),
@@ -425,8 +431,8 @@ final class KeyboardViewController: UIInputViewController {
         let base = AppSettings.keyboardHeight.points + (Self.barHeight - 44)
         guard showsNumberRow else { return base }
         // A shorter extra row (a fraction of a letter row; 4 rows + 3 gaps share the key area) plus its gap.
-        let rowHeight = (AppSettings.keyboardHeight.points - 44 - 8 - 30) / 4
-        return base + rowHeight * Self.numberRowScale + 10
+        let rowHeight = (AppSettings.keyboardHeight.points - 44 - 8 - 3 * Self.rowGap) / 4
+        return base + rowHeight * Self.numberRowScale + Self.rowGap + Self.numberRowGap
     }
 
     /// The optional 1–0 row sits above the letters (not on the number/symbol pages or the kana pad).
@@ -790,6 +796,7 @@ final class KeyboardViewController: UIInputViewController {
         letterBases = []
         shiftButton = nil
         heightConstraint?.constant = currentHeight()
+        keysTop?.constant = showsNumberRow ? 4 + Self.numberRowGap : 4
         keysStack.distribution = .fillEqually
 
         if language == .japanese && layer == .letters && AppSettings.japaneseLayout == .kana {
@@ -988,7 +995,7 @@ final class KeyboardViewController: UIInputViewController {
         }
         func vstack(_ views: [UIView], fill: Bool = false) -> UIStackView {
             let s = UIStackView(arrangedSubviews: views)
-            s.axis = .vertical; s.spacing = 10
+            s.axis = .vertical; s.spacing = Self.rowGap
             s.distribution = fill ? .fill : .fillEqually
             return s
         }
