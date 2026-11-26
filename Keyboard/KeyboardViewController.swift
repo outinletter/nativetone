@@ -84,6 +84,7 @@ final class KeyboardViewController: UIInputViewController {
         set { }
     }
     private var heightConstraint: NSLayoutConstraint!
+    private weak var numberRow: UIStackView?
     private var returnButton: KeyButton?
     private static let shiftedJamo: [String: String] = [
         "ㅂ": "ㅃ", "ㅈ": "ㅉ", "ㄷ": "ㄸ", "ㄱ": "ㄲ", "ㅅ": "ㅆ", "ㅐ": "ㅒ", "ㅔ": "ㅖ",
@@ -423,12 +424,15 @@ final class KeyboardViewController: UIInputViewController {
         // The taller bar is added on top so the keys keep their size.
         let base = AppSettings.keyboardHeight.points + (Self.barHeight - 44)
         guard showsNumberRow else { return base }
-        // One more key row of the same height (4 rows + 3 gaps share the key area) plus its gap.
+        // A shorter extra row (a fraction of a letter row; 4 rows + 3 gaps share the key area) plus its gap.
         let rowHeight = (AppSettings.keyboardHeight.points - 44 - 8 - 30) / 4
-        return base + rowHeight + 10
+        return base + rowHeight * Self.numberRowScale + 10
     }
 
     /// The optional 1–0 row sits above the letters (not on the number/symbol pages or the kana pad).
+    /// Height of the 1–0 row relative to a letter row.
+    private static let numberRowScale: CGFloat = 0.72
+
     private var showsNumberRow: Bool {
         AppSettings.showNumberRow && layer == .letters
             && !(language == .japanese && AppSettings.japaneseLayout == .kana)
@@ -786,6 +790,7 @@ final class KeyboardViewController: UIInputViewController {
         letterBases = []
         shiftButton = nil
         heightConstraint?.constant = currentHeight()
+        keysStack.distribution = .fillEqually
 
         if language == .japanese && layer == .letters && AppSettings.japaneseLayout == .kana {
             buildKanaKeys()
@@ -809,6 +814,9 @@ final class KeyboardViewController: UIInputViewController {
             digits.axis = .horizontal; digits.spacing = 5; digits.distribution = .fillEqually
             Array("1234567890").map { makeCharKey(String($0)) }.forEach(digits.addArrangedSubview)
             keysStack.addArrangedSubview(digits)
+            numberRow = digits
+        } else {
+            numberRow = nil
         }
 
         // Row 1 defines the reference key width (equal fill).
@@ -892,6 +900,13 @@ final class KeyboardViewController: UIInputViewController {
         let bottom = UIStackView(arrangedSubviews: langList.count > 1 ? [modeKey, langKey, space, ret] : [modeKey, space, ret])
         bottom.axis = .horizontal; bottom.spacing = 5; bottom.distribution = .fill
         keysStack.addArrangedSubview(bottom)
+        if let digits = numberRow {
+            // Letter rows stay equal; the number row is a fixed fraction of them.
+            keysStack.distribution = .fill
+            let rows = keysStack.arrangedSubviews.filter { $0 !== digits }
+            rows.dropFirst().forEach { $0.heightAnchor.constraint(equalTo: rows[0].heightAnchor).isActive = true }
+            digits.heightAnchor.constraint(equalTo: rows[0].heightAnchor, multiplier: Self.numberRowScale).isActive = true
+        }
         modeKey.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: 1.4).isActive = true
         if langList.count > 1 { langKey.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: 1.2).isActive = true }
         ret.widthAnchor.constraint(equalTo: ref.widthAnchor, multiplier: 2.2).isActive = true

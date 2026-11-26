@@ -1,5 +1,4 @@
 import UIKit
-import AudioToolbox
 
 enum KeyboardTheme {
     static let background = UIColor { $0.userInterfaceStyle == .dark
@@ -17,13 +16,15 @@ enum KeyboardTheme {
         ? UIColor(red: 0.04, green: 0.08, blue: 0.15, alpha: 1) : .white }
 }
 
-/// Key-press haptic: the system's very short "peek" tick. Unlike UIImpactFeedbackGenerator it is not
-/// throttled when keys come quickly, so every key in a fast burst still gets its tap.
+/// Key-press haptic: the selection tick, the shortest and lightest system haptic. It is made for rapid
+/// repeats (like a picker wheel), so every key in a fast burst still gets its tap.
 enum Haptics {
     static var enabled = AppSettings.haptics
+    private static let tick = UISelectionFeedbackGenerator()
     static func tap() {
         guard enabled else { return }
-        AudioServicesPlaySystemSound(1519)
+        tick.selectionChanged()
+        tick.prepare()
     }
 }
 
