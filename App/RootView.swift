@@ -13,6 +13,7 @@ struct RootView: View {
     @State private var japaneseLayout = AppSettings.japaneseLayout
     @State private var keyboardHeight = AppSettings.keyboardHeight
     @State private var haptics = AppSettings.haptics
+    @State private var showNumberRow = AppSettings.showNumberRow
     @State private var autoCapitalize = AppSettings.autoCapitalize
     @State private var saveHistory = AppSettings.saveHistory
     @State private var aiEnabled = AppSettings.aiEnabled
@@ -58,6 +59,7 @@ struct RootView: View {
         .onChange(of: japaneseLayout) { AppSettings.japaneseLayout = $1 }
         .onChange(of: keyboardHeight) { AppSettings.keyboardHeight = $1 }
         .onChange(of: haptics) { AppSettings.haptics = $1 }
+        .onChange(of: showNumberRow) { AppSettings.showNumberRow = $1 }
         .onChange(of: autoCapitalize) { AppSettings.autoCapitalize = $1 }
         .onChange(of: saveHistory) { AppSettings.saveHistory = $1 }
         .onChange(of: aiEnabled) { AppSettings.aiEnabled = $1 }
@@ -142,6 +144,7 @@ struct RootView: View {
             Picker(L("키보드 높이", "Keyboard height"), selection: $keyboardHeight) {
                 ForEach(KeyboardHeight.allCases) { Text($0.label).tag($0) }
             }
+            Toggle(L("숫자 키 줄 보이기", "Show number row"), isOn: $showNumberRow)
             Toggle(L("키 입력 진동", "Key haptics"), isOn: $haptics)
             Toggle(L("문장 시작 자동 대문자", "Auto-capitalize sentences"), isOn: $autoCapitalize)
         } header: {
@@ -168,6 +171,8 @@ struct RootView: View {
             Text(L("교정을 요청한 순간의 현재 문장만 서버로 전송해요. 키 입력은 저장하거나 기록하지 않고, 비밀번호 입력창에서는 키보드가 자동으로 꺼져요.", "Only the current sentence is sent for rewriting. Keystrokes are never stored, and the keyboard turns off automatically in password fields."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+            Link(L("개인정보 처리방침", "Privacy policy"), destination: URL(string: "https://outinletter.github.io/privacy-policy/nativetone.html")!)
+            Link(L("지원", "Support"), destination: URL(string: "https://outinletter.github.io/privacy-policy/nativetone-support.html")!)
         } header: {
             Theme.eyebrow(L("개인정보", "Privacy"))
         }

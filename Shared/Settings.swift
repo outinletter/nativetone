@@ -137,6 +137,7 @@ enum AppSettings {
         static let inputLanguages = "inputLanguages"
         static let keyboardHeight = "keyboardHeight"
         static let haptics = "haptics"
+        static let showNumberRow = "showNumberRow"
         static let autoCapitalize = "autoCapitalize"
     }
 
@@ -217,6 +218,12 @@ enum AppSettings {
     static var haptics: Bool {
         get { defaults.object(forKey: Key.haptics) as? Bool ?? true }
         set { defaults.set(newValue, forKey: Key.haptics) }
+    }
+
+    /// Keyboard: a row of 1–0 above the letters (default off).
+    static var showNumberRow: Bool {
+        get { defaults.object(forKey: Key.showNumberRow) as? Bool ?? false }
+        set { defaults.set(newValue, forKey: Key.showNumberRow) }
     }
 
     /// Keyboard: shift automatically at the start of a sentence (default on).

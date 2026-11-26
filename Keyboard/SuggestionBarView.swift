@@ -16,7 +16,6 @@ final class SuggestionBarView: UIView, UIGestureRecognizerDelegate {
     var onTrigger: (() -> Void)?
     var onApply: (() -> Void)?
     var onToneTap: (() -> Void)?
-    var onAIToggle: (() -> Void)?
     var onUndo: (() -> Void)?
     /// Double tap on the typed text: select the word at that index. Triple tap: select everything.
     var onWordSelect: ((Int) -> Void)?
@@ -39,7 +38,6 @@ final class SuggestionBarView: UIView, UIGestureRecognizerDelegate {
     private let label = UILabel()          // top row: suggestion / hints
     private let topScroll = UIScrollView() // lets a long suggestion slide sideways
     private let typedLabel = UILabel()     // bottom row: typed text with caret
-    private let aiButton = UIButton(type: .custom)
     private let toneButton = UIButton(type: .system)
     private let undoButton = UIButton(type: .system)
     private let undoSlot = UIView()
@@ -98,16 +96,9 @@ final class SuggestionBarView: UIView, UIGestureRecognizerDelegate {
         topScroll.setContentHuggingPriority(.defaultLow, for: .horizontal)
         topScroll.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        // Style icon (left) plus round undo and AI buttons (right), all in 30pt slots.
+        // Style icon (left) plus round undo and apply buttons (right), all in 30pt slots.
+        // AI on/off lives in the app's settings, not on the keyboard.
         let d = Self.circle
-        aiButton.setTitle("AI", for: .normal)
-        aiButton.titleLabel?.font = .systemFont(ofSize: 12, weight: .bold)
-        aiButton.layer.cornerRadius = d / 2
-        aiButton.layer.borderWidth = 1.5
-        aiButton.addAction(UIAction { [weak self] _ in
-            Haptics.tap()
-            self?.onAIToggle?()
-        }, for: .touchUpInside)
 
         toneButton.tintColor = KeyboardTheme.accent
         toneButton.addAction(UIAction { [weak self] _ in self?.onToneTap?() }, for: .touchUpInside)
@@ -139,9 +130,8 @@ final class SuggestionBarView: UIView, UIGestureRecognizerDelegate {
 
         let toneSlot = Self.slot(toneButton)
         Self.fill(undoSlot, with: undoButton)
-        let aiSlot = Self.slot(aiButton)
 
-        let stack = UIStackView(arrangedSubviews: [toneSlot, topScroll, undoSlot, aiSlot, applySlot])
+        let stack = UIStackView(arrangedSubviews: [toneSlot, topScroll, undoSlot, applySlot])
         stack.axis = .horizontal
         stack.alignment = .fill
         stack.spacing = 8
@@ -234,17 +224,7 @@ final class SuggestionBarView: UIView, UIGestureRecognizerDelegate {
     private func applyAIAppearance() {
         updateApplyButton()
         UIView.performWithoutAnimation {
-            if aiEnabled {
-                aiButton.backgroundColor = KeyboardTheme.accent
-                aiButton.layer.borderColor = KeyboardTheme.accent.cgColor
-                aiButton.setTitleColor(KeyboardTheme.onAccent, for: .normal)
-                toneButton.alpha = 1
-            } else {
-                aiButton.backgroundColor = .clear
-                aiButton.layer.borderColor = UIColor.tertiaryLabel.cgColor
-                aiButton.setTitleColor(.secondaryLabel, for: .normal)
-                toneButton.alpha = 0.35
-            }
+            toneButton.alpha = aiEnabled ? 1 : 0.35
             toneButton.isUserInteractionEnabled = aiEnabled
         }
     }

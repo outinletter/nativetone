@@ -37,8 +37,12 @@ kb.add_file_references(shared_refs + kb_refs)
 
 assets = app_group.new_file('Assets.xcassets')
 app.resources_build_phase.add_file_reference(assets)
+app_privacy = app_group.new_file('PrivacyInfo.xcprivacy')
+app.resources_build_phase.add_file_reference(app_privacy)
 app_group.new_file('Info.plist')
 app_group.new_file('NativeTone.entitlements')
+kb_privacy = kb_group.new_file('PrivacyInfo.xcprivacy')
+kb.resources_build_phase.add_file_reference(kb_privacy)
 kb_group.new_file('Info.plist')
 kb_group.new_file('NativeToneKeyboard.entitlements')
 
@@ -47,7 +51,7 @@ common = {
   'IPHONEOS_DEPLOYMENT_TARGET' => DEPLOY,
   'TARGETED_DEVICE_FAMILY' => '1',
   'MARKETING_VERSION' => '1.0',
-  'CURRENT_PROJECT_VERSION' => '8',
+  'CURRENT_PROJECT_VERSION' => '9',
   'GENERATE_INFOPLIST_FILE' => 'NO',
   'DEVELOPMENT_TEAM' => 'A7QB8PT33N',
   'CODE_SIGN_STYLE' => 'Automatic',

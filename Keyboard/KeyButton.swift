@@ -1,4 +1,5 @@
 import UIKit
+import AudioToolbox
 
 enum KeyboardTheme {
     static let background = UIColor { $0.userInterfaceStyle == .dark
@@ -16,14 +17,13 @@ enum KeyboardTheme {
         ? UIColor(red: 0.04, green: 0.08, blue: 0.15, alpha: 1) : .white }
 }
 
-/// One reused, pre-warmed generator: creating a new one per key press adds noticeable latency.
+/// Key-press haptic: the system's very short "peek" tick. Unlike UIImpactFeedbackGenerator it is not
+/// throttled when keys come quickly, so every key in a fast burst still gets its tap.
 enum Haptics {
     static var enabled = AppSettings.haptics
-    private static let light = UIImpactFeedbackGenerator(style: .light)
     static func tap() {
         guard enabled else { return }
-        light.impactOccurred()
-        light.prepare()
+        AudioServicesPlaySystemSound(1519)
     }
 }
 

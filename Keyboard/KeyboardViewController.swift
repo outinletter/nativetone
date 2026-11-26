@@ -140,7 +140,6 @@ final class KeyboardViewController: UIInputViewController {
         bar.onPaste = { [weak self] in self?.pasteFromClipboard() }
         bar.onApply = { [weak self] in self?.applySuggestion() }
         bar.onToneTap = { [weak self] in self?.cycleTone() }
-        bar.onAIToggle = { [weak self] in self?.toggleAI() }
         bar.onUndo = { [weak self] in self?.undoApply() }
         bar.onClear = { [weak self] in self?.clearSentence() }
         bar.onCaretTap = { [weak self] in self?.moveHostCursor(to: $0) }
@@ -422,7 +421,17 @@ final class KeyboardViewController: UIInputViewController {
     /// Height from the app setting, plus room for the Korean compose bar.
     private func currentHeight() -> CGFloat {
         // The taller bar is added on top so the keys keep their size.
-        AppSettings.keyboardHeight.points + (Self.barHeight - 44)
+        let base = AppSettings.keyboardHeight.points + (Self.barHeight - 44)
+        guard showsNumberRow else { return base }
+        // One more key row of the same height (4 rows + 3 gaps share the key area) plus its gap.
+        let rowHeight = (AppSettings.keyboardHeight.points - 44 - 8 - 30) / 4
+        return base + rowHeight + 10
+    }
+
+    /// The optional 1–0 row sits above the letters (not on the number/symbol pages or the kana pad).
+    private var showsNumberRow: Bool {
+        AppSettings.showNumberRow && layer == .letters
+            && !(language == .japanese && AppSettings.japaneseLayout == .kana)
     }
 
     // MARK: - Rewrite
@@ -744,16 +753,6 @@ final class KeyboardViewController: UIInputViewController {
         scheduleAutoSuggest()
     }
 
-    private func toggleAI() {
-        autoTimer?.invalidate()
-        task?.cancel()
-        AppSettings.aiEnabled.toggle()
-        bar.aiEnabled = AppSettings.aiEnabled
-        pending = nil
-        bar.set(.idle)
-        refreshMirror()
-    }
-
     private func toggleLanguage() {
         let list = availableLanguages.isEmpty ? languages() : availableLanguages
         let i = list.firstIndex(of: language) ?? 0
@@ -786,6 +785,7 @@ final class KeyboardViewController: UIInputViewController {
         keysStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         letterBases = []
         shiftButton = nil
+        heightConstraint?.constant = currentHeight()
 
         if language == .japanese && layer == .letters && AppSettings.japaneseLayout == .kana {
             buildKanaKeys()
@@ -802,6 +802,13 @@ final class KeyboardViewController: UIInputViewController {
             rows = [Array("1234567890").map(String.init), ["-", "/", ":", ";", "(", ")", "$", "&", "@", "\""], [".", ",", "?", "!", "'"]]
         case .symbols:
             rows = [["[", "]", "{", "}", "#", "%", "^", "*", "+", "="], ["_", "\\", "|", "~", "<", ">", "€", "£", "¥", "•"], [".", ",", "?", "!", "'"]]
+        }
+
+        if showsNumberRow {
+            let digits = UIStackView()
+            digits.axis = .horizontal; digits.spacing = 5; digits.distribution = .fillEqually
+            Array("1234567890").map { makeCharKey(String($0)) }.forEach(digits.addArrangedSubview)
+            keysStack.addArrangedSubview(digits)
         }
 
         // Row 1 defines the reference key width (equal fill).
