@@ -431,7 +431,7 @@ final class KeyboardViewController: UIInputViewController {
 
     /// The optional 1–0 row sits above the letters (not on the number/symbol pages or the kana pad).
     /// Height of the 1–0 row relative to a letter row.
-    private static let numberRowScale: CGFloat = 0.72
+    private static let numberRowScale: CGFloat = 0.80
 
     private var showsNumberRow: Bool {
         AppSettings.showNumberRow && layer == .letters
