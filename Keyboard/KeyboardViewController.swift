@@ -88,8 +88,6 @@ final class KeyboardViewController: UIInputViewController {
     private var keysTop: NSLayoutConstraint!
     /// Vertical gap between key rows.
     private static let rowGap: CGFloat = 7
-    /// Extra space between the top bar and the number row.
-    private static let numberRowGap: CGFloat = 8
     private var returnButton: KeyButton?
     private static let shiftedJamo: [String: String] = [
         "ㅂ": "ㅃ", "ㅈ": "ㅉ", "ㄷ": "ㄸ", "ㄱ": "ㄲ", "ㅅ": "ㅆ", "ㅐ": "ㅒ", "ㅔ": "ㅖ",
@@ -123,7 +121,8 @@ final class KeyboardViewController: UIInputViewController {
         view.addSubview(bar)
         view.addSubview(keysStack)
 
-        keysTop = keysStack.topAnchor.constraint(equalTo: bar.bottomAnchor, constant: 4)
+        // The space above the first key row matches the gap between rows.
+        keysTop = keysStack.topAnchor.constraint(equalTo: bar.bottomAnchor, constant: Self.rowGap)
         heightConstraint = view.heightAnchor.constraint(equalToConstant: currentHeight())
         heightConstraint.priority = .init(999)
         NSLayoutConstraint.activate([
@@ -428,20 +427,26 @@ final class KeyboardViewController: UIInputViewController {
     /// Height from the app setting, plus room for the Korean compose bar.
     private func currentHeight() -> CGFloat {
         // The taller bar is added on top so the keys keep their size.
-        let base = AppSettings.keyboardHeight.points + (Self.barHeight - 44)
-        guard showsNumberRow else { return base }
+        // (rowGap - 4): the top gap grew from 4pt to the row gap; add it so the keys keep their size.
+        let base = AppSettings.keyboardHeight.points + (Self.barHeight - 44) + (Self.rowGap - 4)
+        // Reserve the row's height on every page so switching to numbers/symbols keeps the keyboard height.
+        guard reservesNumberRow else { return base }
         // A shorter extra row (a fraction of a letter row; 4 rows + 3 gaps share the key area) plus its gap.
         let rowHeight = (AppSettings.keyboardHeight.points - 44 - 8 - 3 * Self.rowGap) / 4
-        return base + rowHeight * Self.numberRowScale + Self.rowGap + Self.numberRowGap
+        return base + rowHeight * Self.numberRowScale + Self.rowGap
     }
 
     /// The optional 1–0 row sits above the letters (not on the number/symbol pages or the kana pad).
     /// Height of the 1–0 row relative to a letter row.
     private static let numberRowScale: CGFloat = 0.80
 
+    /// The keyboard keeps room for the number row on every page while the option is on.
+    private var reservesNumberRow: Bool {
+        AppSettings.showNumberRow && !(language == .japanese && AppSettings.japaneseLayout == .kana)
+    }
+
     private var showsNumberRow: Bool {
-        AppSettings.showNumberRow && layer == .letters
-            && !(language == .japanese && AppSettings.japaneseLayout == .kana)
+        reservesNumberRow
     }
 
     // MARK: - Rewrite
@@ -796,7 +801,6 @@ final class KeyboardViewController: UIInputViewController {
         letterBases = []
         shiftButton = nil
         heightConstraint?.constant = currentHeight()
-        keysTop?.constant = showsNumberRow ? 4 + Self.numberRowGap : 4
         keysStack.distribution = .fillEqually
 
         if language == .japanese && layer == .letters && AppSettings.japaneseLayout == .kana {
@@ -810,6 +814,11 @@ final class KeyboardViewController: UIInputViewController {
             rows = [Array("ㅂㅈㄷㄱㅅㅛㅕㅑㅐㅔ").map(String.init), Array("ㅁㄴㅇㄹㅎㅗㅓㅏㅣ").map(String.init), Array("ㅋㅌㅊㅍㅠㅜㅡ").map(String.init)]
         case .letters:
             rows = [Array("qwertyuiop").map(String.init), Array("asdfghjkl").map(String.init), Array("zxcvbnm").map(String.init)]
+        case .numbers where showsNumberRow:
+            // The 1–0 row sits above, so the page gets three symbol rows.
+            rows = [["-", "/", ":", ";", "(", ")", "$", "&", "@", "\""], ["[", "]", "{", "}", "#", "%", "^", "*", "+", "="], [".", ",", "?", "!", "'"]]
+        case .symbols where showsNumberRow:
+            rows = [["_", "\\", "|", "~", "<", ">", "€", "£", "¥", "•"], ["`", "°", "±", "×", "÷", "≠", "≈", "¢", "₩", "§"], [".", ",", "?", "!", "'"]]
         case .numbers:
             rows = [Array("1234567890").map(String.init), ["-", "/", ":", ";", "(", ")", "$", "&", "@", "\""], [".", ",", "?", "!", "'"]]
         case .symbols:
