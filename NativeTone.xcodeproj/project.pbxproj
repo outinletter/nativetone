@@ -7,49 +7,49 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0DCDD05D549EA9F4C7ADEE5E /* FlickKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51A59A73D78CF893DBE3853 /* FlickKey.swift */; };
-		0E28C05850CC4367E6057AAB /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA338FA7DBA8810D136BFC55 /* Settings.swift */; };
-		0E7F4530C5F166F540DD1ECD /* NativeToneClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 275204623225876C0B266675 /* NativeToneClient.swift */; };
-		12C452C0BD00CF88D70BAD5C /* NativeToneKeyboard.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 12A5719592DE0D03712B2F27 /* NativeToneKeyboard.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		1C7C06E06CD059545C3E3C49 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CA7C7524DC2E4971B50184 /* Models.swift */; };
-		2F43D80F9B67807AB5D331CF /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A7D81E9AC0F4CE5ACAAC5DF /* HistoryStore.swift */; };
-		34B534229334BE1443824A19 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA338FA7DBA8810D136BFC55 /* Settings.swift */; };
-		4023DC93F22976806240EBEF /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15356C96FE10470B1AA2196 /* Theme.swift */; };
-		4957A409E278D84B8A96D8A4 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9E634BBA8CF0517DE144438 /* Foundation.framework */; };
-		4E777001B762C827A03B1FCA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DBB039F023115F89EF17C8F1 /* Assets.xcassets */; };
-		5C8DBC7ECC29A2D24C6350C6 /* HistoryPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FE68CB0C340107B003B9720 /* HistoryPage.swift */; };
-		7EDADEE264E3F77DCE9269C6 /* NativeToneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 601D7028B3B4F3B5C7E4910F /* NativeToneApp.swift */; };
-		96789BD08138B6CDF2F19923 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = E2487788760C42C62B5AB3BB /* PrivacyInfo.xcprivacy */; };
-		9692C9EB88AA1405CFDDBFF5 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = EF97A63765730D96E342BD7A /* PrivacyInfo.xcprivacy */; };
-		972DA9136F6F36C23F5A6450 /* HangulComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4B49AC688EAD0944EB4E1D2 /* HangulComposer.swift */; };
-		9BDB59FFFC7B130A28E9BCF5 /* SuggestionBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9C55D8BED62E001C3DE7C1 /* SuggestionBarView.swift */; };
-		9C56497BED6CC046B57461E7 /* LatinComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD13F410F57F71F046B0BE76 /* LatinComposer.swift */; };
-		ACEA489D2FDEBEA955088F6C /* NativeToneClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 275204623225876C0B266675 /* NativeToneClient.swift */; };
-		B62EDF01413F9408364D3715 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76354DC2A654E4E198B4EED7 /* KeyboardViewController.swift */; };
-		C5A77488565B03AFFC889FD2 /* KeyButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D49E1E5DFA4E68DB9D0FE721 /* KeyButton.swift */; };
-		D54D7086E2A886EFEE1D8229 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9E634BBA8CF0517DE144438 /* Foundation.framework */; };
-		E97D26CAD072237D7C6CD0A4 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6CA7C7524DC2E4971B50184 /* Models.swift */; };
-		FB136C9D4ACE9A87FEFA91BD /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2C4FB54B2E48383A15D6BFA /* RootView.swift */; };
+		152AEACEF718F89ED3D1B7A3 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC35E343F6FBBC9C08F97C90 /* Models.swift */; };
+		213EBD19202A9642190BE865 /* HangulComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF8A4F3688F9B0ACE3ABC094 /* HangulComposer.swift */; };
+		299D53D239BA7BEBCE4FA138 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A603D2158DB6C963E81FD5D5 /* Assets.xcassets */; };
+		2B9235ED5700F04FF9C84C0F /* NativeToneKeyboard.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 25BA65289783365268E3EB24 /* NativeToneKeyboard.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		3B05B5E706942A6DEB59C8E4 /* NativeToneClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3FDD649133B4ADAE75D23D2 /* NativeToneClient.swift */; };
+		3B908E4BBD93F03CECD9EC24 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 9A26A5C78CBA94771D77C12C /* PrivacyInfo.xcprivacy */; };
+		3E46D2B723B5EF21EE8FAB78 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06F9E6E5401A64B4D56CF20B /* Settings.swift */; };
+		535BCD7C436CFEEF353C50D9 /* SuggestionBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D3F592381B88F7347DFC955 /* SuggestionBarView.swift */; };
+		54D4A42FF6F5660B73ADFC02 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 190A2C49167A306B73A24AF7 /* Theme.swift */; };
+		5896C912B9197B0FC8F40458 /* NativeToneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F2CD062CB293E5C854D1A1 /* NativeToneApp.swift */; };
+		69BA538D1F6DFF3A672EC284 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61ABF8B5C2660457D6D40A56 /* RootView.swift */; };
+		8FC2DFD8EE9753052B652662 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC35E343F6FBBC9C08F97C90 /* Models.swift */; };
+		92CC495ECDB0FCA21336B5A2 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B7AA1C42FB49BB3769B1C5EC /* Foundation.framework */; };
+		9516200D94AD3015734A701C /* FlickKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48A4D361E69BC39EB6D0584F /* FlickKey.swift */; };
+		9E5C1127593EFDB8B8F83442 /* NativeToneClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3FDD649133B4ADAE75D23D2 /* NativeToneClient.swift */; };
+		A27DAEA9F3CEA865F6A6F5E6 /* HistoryPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = D69B6E349547842624F5BA0C /* HistoryPage.swift */; };
+		B5C41D7EF2169CC4ECBD9AB3 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C1F06207FBB05786AE561B6 /* KeyboardViewController.swift */; };
+		D705011FAF50E04A0C82EB6F /* KeyButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 330D8DFDB71910CF1ED19B94 /* KeyButton.swift */; };
+		DCF49219F7D90FF172277C38 /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3561BC1804B60D6C1C776726 /* HistoryStore.swift */; };
+		DE287C211D58FFD3DF2F57A3 /* LatinComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A8F6075098ADA927928B9D6 /* LatinComposer.swift */; };
+		E27F5BFEB64EF84E32AFF439 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B7AA1C42FB49BB3769B1C5EC /* Foundation.framework */; };
+		F53BE07CFCD90A6A5AE5161E /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06F9E6E5401A64B4D56CF20B /* Settings.swift */; };
+		F72AE0938800836D99E584B8 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 14EF6F8005BFFF482AC300B1 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		F4B99FDA99DFAAE2497B5CAC /* PBXContainerItemProxy */ = {
+		A2F6024AB7C85F1B191F7C6D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = 1BB6F914151F25F136848E7A /* Project object */;
+			containerPortal = FF3D75232B9A26129CCFE70B /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 6761978F22F355EE1940EF4D;
+			remoteGlobalIDString = 75EBBA4EA5621BBCF0CC8D72;
 			remoteInfo = NativeToneKeyboard;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		BEA09B918B893F78F9E81B9D /* Embed Foundation Extensions */ = {
+		14E8187DBF78C3B9FD3696D9 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				12C452C0BD00CF88D70BAD5C /* NativeToneKeyboard.appex in Embed Foundation Extensions */,
+				2B9235ED5700F04FF9C84C0F /* NativeToneKeyboard.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -57,143 +57,143 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		02BC2AC10716D99647A5F11F /* NativeTone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NativeTone.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		0A7D81E9AC0F4CE5ACAAC5DF /* HistoryStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistoryStore.swift; sourceTree = "<group>"; };
-		0D0A38684440CBE3C0775B6B /* NativeToneKeyboard.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = NativeToneKeyboard.entitlements; sourceTree = "<group>"; };
-		12A5719592DE0D03712B2F27 /* NativeToneKeyboard.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NativeToneKeyboard.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		275204623225876C0B266675 /* NativeToneClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NativeToneClient.swift; sourceTree = "<group>"; };
-		29E377B0C17C6AC64E7B5AA4 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		3FE68CB0C340107B003B9720 /* HistoryPage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistoryPage.swift; sourceTree = "<group>"; };
-		56CC50604AF6313BC051D66F /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		601D7028B3B4F3B5C7E4910F /* NativeToneApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NativeToneApp.swift; sourceTree = "<group>"; };
-		76354DC2A654E4E198B4EED7 /* KeyboardViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
-		A15356C96FE10470B1AA2196 /* Theme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
-		AA338FA7DBA8810D136BFC55 /* Settings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
-		AD13F410F57F71F046B0BE76 /* LatinComposer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LatinComposer.swift; sourceTree = "<group>"; };
-		BB7857CA339E4AD7255DDBFE /* NativeTone.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = NativeTone.entitlements; sourceTree = "<group>"; };
-		CC9C55D8BED62E001C3DE7C1 /* SuggestionBarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SuggestionBarView.swift; sourceTree = "<group>"; };
-		D49E1E5DFA4E68DB9D0FE721 /* KeyButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeyButton.swift; sourceTree = "<group>"; };
-		D6CA7C7524DC2E4971B50184 /* Models.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		DBB039F023115F89EF17C8F1 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		E2487788760C42C62B5AB3BB /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		E4B49AC688EAD0944EB4E1D2 /* HangulComposer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HangulComposer.swift; sourceTree = "<group>"; };
-		E51A59A73D78CF893DBE3853 /* FlickKey.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlickKey.swift; sourceTree = "<group>"; };
-		E9E634BBA8CF0517DE144438 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
-		EF97A63765730D96E342BD7A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		F2C4FB54B2E48383A15D6BFA /* RootView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		01F2CD062CB293E5C854D1A1 /* NativeToneApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NativeToneApp.swift; sourceTree = "<group>"; };
+		06F9E6E5401A64B4D56CF20B /* Settings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
+		14EF6F8005BFFF482AC300B1 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		190A2C49167A306B73A24AF7 /* Theme.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		25BA65289783365268E3EB24 /* NativeToneKeyboard.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NativeToneKeyboard.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		330D8DFDB71910CF1ED19B94 /* KeyButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeyButton.swift; sourceTree = "<group>"; };
+		349DB060E30C6DDD37F6921A /* NativeTone.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = NativeTone.entitlements; sourceTree = "<group>"; };
+		3561BC1804B60D6C1C776726 /* HistoryStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistoryStore.swift; sourceTree = "<group>"; };
+		47796EDBB65BB665F33B7478 /* NativeToneKeyboard.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = NativeToneKeyboard.entitlements; sourceTree = "<group>"; };
+		48A4D361E69BC39EB6D0584F /* FlickKey.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlickKey.swift; sourceTree = "<group>"; };
+		4D3F592381B88F7347DFC955 /* SuggestionBarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SuggestionBarView.swift; sourceTree = "<group>"; };
+		540B24C50A702B732D60DE83 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5A8F6075098ADA927928B9D6 /* LatinComposer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LatinComposer.swift; sourceTree = "<group>"; };
+		61ABF8B5C2660457D6D40A56 /* RootView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		625D65D4F7C31D472084A067 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		6C1F06207FBB05786AE561B6 /* KeyboardViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
+		9A26A5C78CBA94771D77C12C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A603D2158DB6C963E81FD5D5 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B7AA1C42FB49BB3769B1C5EC /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		CC35E343F6FBBC9C08F97C90 /* Models.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		D3FDD649133B4ADAE75D23D2 /* NativeToneClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NativeToneClient.swift; sourceTree = "<group>"; };
+		D69B6E349547842624F5BA0C /* HistoryPage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistoryPage.swift; sourceTree = "<group>"; };
+		DF8A4F3688F9B0ACE3ABC094 /* HangulComposer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HangulComposer.swift; sourceTree = "<group>"; };
+		ED3C1E1EFE0931EAC03F4B56 /* NativeTone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NativeTone.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		CCF248EC8880F7EA58765D85 /* Frameworks */ = {
+		22EF30B31C1410E0A6ADB3E9 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D54D7086E2A886EFEE1D8229 /* Foundation.framework in Frameworks */,
+				92CC495ECDB0FCA21336B5A2 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		E4810A89A014D6F71A314E03 /* Frameworks */ = {
+		A06495919572400203122721 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4957A409E278D84B8A96D8A4 /* Foundation.framework in Frameworks */,
+				E27F5BFEB64EF84E32AFF439 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		1B5203B9CD5E437E6DB59773 /* App */ = {
+		18CD45C62A7D7A4D90710FA3 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				3FE68CB0C340107B003B9720 /* HistoryPage.swift */,
-				0A7D81E9AC0F4CE5ACAAC5DF /* HistoryStore.swift */,
-				601D7028B3B4F3B5C7E4910F /* NativeToneApp.swift */,
-				F2C4FB54B2E48383A15D6BFA /* RootView.swift */,
-				A15356C96FE10470B1AA2196 /* Theme.swift */,
-				DBB039F023115F89EF17C8F1 /* Assets.xcassets */,
-				EF97A63765730D96E342BD7A /* PrivacyInfo.xcprivacy */,
-				56CC50604AF6313BC051D66F /* Info.plist */,
-				BB7857CA339E4AD7255DDBFE /* NativeTone.entitlements */,
+				E4914696FA10CBDB1EE811D6 /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		5BF08B97528E2E8A1088DD48 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				D69B6E349547842624F5BA0C /* HistoryPage.swift */,
+				3561BC1804B60D6C1C776726 /* HistoryStore.swift */,
+				01F2CD062CB293E5C854D1A1 /* NativeToneApp.swift */,
+				61ABF8B5C2660457D6D40A56 /* RootView.swift */,
+				190A2C49167A306B73A24AF7 /* Theme.swift */,
+				A603D2158DB6C963E81FD5D5 /* Assets.xcassets */,
+				9A26A5C78CBA94771D77C12C /* PrivacyInfo.xcprivacy */,
+				540B24C50A702B732D60DE83 /* Info.plist */,
+				349DB060E30C6DDD37F6921A /* NativeTone.entitlements */,
 			);
 			name = App;
 			path = App;
 			sourceTree = "<group>";
 		};
-		472EBC70BA6790E2FE1B9753 /* Frameworks */ = {
+		8F9A1DCEB7D4EA038CCF07AC = {
 			isa = PBXGroup;
 			children = (
-				E81683B181E24D4816E2446A /* iOS */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		4DA35027C55E629A819365F1 = {
-			isa = PBXGroup;
-			children = (
-				9223B4AE086217CFEAB4F2A6 /* Products */,
-				472EBC70BA6790E2FE1B9753 /* Frameworks */,
-				7A0F8338D1BE7AC6AD9AD026 /* Shared */,
-				1B5203B9CD5E437E6DB59773 /* App */,
-				6BAC0C7DA63E66D22F576F36 /* Keyboard */,
+				BF0735740BE70F7FAA596A86 /* Products */,
+				18CD45C62A7D7A4D90710FA3 /* Frameworks */,
+				E77C98E5845733C5EDEF559E /* Shared */,
+				5BF08B97528E2E8A1088DD48 /* App */,
+				D8BDEE946C63BFA0DD1DE7E0 /* Keyboard */,
 			);
 			sourceTree = "<group>";
 		};
-		6BAC0C7DA63E66D22F576F36 /* Keyboard */ = {
+		BF0735740BE70F7FAA596A86 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				E51A59A73D78CF893DBE3853 /* FlickKey.swift */,
-				E4B49AC688EAD0944EB4E1D2 /* HangulComposer.swift */,
-				D49E1E5DFA4E68DB9D0FE721 /* KeyButton.swift */,
-				76354DC2A654E4E198B4EED7 /* KeyboardViewController.swift */,
-				AD13F410F57F71F046B0BE76 /* LatinComposer.swift */,
-				CC9C55D8BED62E001C3DE7C1 /* SuggestionBarView.swift */,
-				E2487788760C42C62B5AB3BB /* PrivacyInfo.xcprivacy */,
-				29E377B0C17C6AC64E7B5AA4 /* Info.plist */,
-				0D0A38684440CBE3C0775B6B /* NativeToneKeyboard.entitlements */,
+				ED3C1E1EFE0931EAC03F4B56 /* NativeTone.app */,
+				25BA65289783365268E3EB24 /* NativeToneKeyboard.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D8BDEE946C63BFA0DD1DE7E0 /* Keyboard */ = {
+			isa = PBXGroup;
+			children = (
+				48A4D361E69BC39EB6D0584F /* FlickKey.swift */,
+				DF8A4F3688F9B0ACE3ABC094 /* HangulComposer.swift */,
+				330D8DFDB71910CF1ED19B94 /* KeyButton.swift */,
+				6C1F06207FBB05786AE561B6 /* KeyboardViewController.swift */,
+				5A8F6075098ADA927928B9D6 /* LatinComposer.swift */,
+				4D3F592381B88F7347DFC955 /* SuggestionBarView.swift */,
+				14EF6F8005BFFF482AC300B1 /* PrivacyInfo.xcprivacy */,
+				625D65D4F7C31D472084A067 /* Info.plist */,
+				47796EDBB65BB665F33B7478 /* NativeToneKeyboard.entitlements */,
 			);
 			name = Keyboard;
 			path = Keyboard;
 			sourceTree = "<group>";
 		};
-		7A0F8338D1BE7AC6AD9AD026 /* Shared */ = {
+		E4914696FA10CBDB1EE811D6 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
-				D6CA7C7524DC2E4971B50184 /* Models.swift */,
-				275204623225876C0B266675 /* NativeToneClient.swift */,
-				AA338FA7DBA8810D136BFC55 /* Settings.swift */,
+				B7AA1C42FB49BB3769B1C5EC /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		E77C98E5845733C5EDEF559E /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				CC35E343F6FBBC9C08F97C90 /* Models.swift */,
+				D3FDD649133B4ADAE75D23D2 /* NativeToneClient.swift */,
+				06F9E6E5401A64B4D56CF20B /* Settings.swift */,
 			);
 			name = Shared;
 			path = Shared;
 			sourceTree = "<group>";
 		};
-		9223B4AE086217CFEAB4F2A6 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				02BC2AC10716D99647A5F11F /* NativeTone.app */,
-				12A5719592DE0D03712B2F27 /* NativeToneKeyboard.appex */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		E81683B181E24D4816E2446A /* iOS */ = {
-			isa = PBXGroup;
-			children = (
-				E9E634BBA8CF0517DE144438 /* Foundation.framework */,
-			);
-			name = iOS;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		6761978F22F355EE1940EF4D /* NativeToneKeyboard */ = {
+		75EBBA4EA5621BBCF0CC8D72 /* NativeToneKeyboard */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 7A941BF5301100DFC2BF0912 /* Build configuration list for PBXNativeTarget "NativeToneKeyboard" */;
+			buildConfigurationList = CB55FB4C6CD2DD48CAFCCAD3 /* Build configuration list for PBXNativeTarget "NativeToneKeyboard" */;
 			buildPhases = (
-				7CEFFD07EFF3A4E35FA9024B /* Sources */,
-				CCF248EC8880F7EA58765D85 /* Frameworks */,
-				0D12B57FBE63BFECC9CA6345 /* Resources */,
+				5319F2DFE7515E5866BA1B82 /* Sources */,
+				A06495919572400203122721 /* Frameworks */,
+				C2F47DF22D3DC31F49344E16 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -201,38 +201,38 @@
 			);
 			name = NativeToneKeyboard;
 			productName = NativeToneKeyboard;
-			productReference = 12A5719592DE0D03712B2F27 /* NativeToneKeyboard.appex */;
+			productReference = 25BA65289783365268E3EB24 /* NativeToneKeyboard.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
-		EB515DF0DE815FA624F879B0 /* NativeTone */ = {
+		7F79A2981649A3A3AB324BF7 /* NativeTone */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 652F27BF1269FDB78A160A37 /* Build configuration list for PBXNativeTarget "NativeTone" */;
+			buildConfigurationList = B4E682E9BDB7F10B888170FB /* Build configuration list for PBXNativeTarget "NativeTone" */;
 			buildPhases = (
-				243922C3BDC685C4491709C6 /* Sources */,
-				E4810A89A014D6F71A314E03 /* Frameworks */,
-				9FCB051BE1461457B787E13D /* Resources */,
-				BEA09B918B893F78F9E81B9D /* Embed Foundation Extensions */,
+				337008F31C1474D73018AF4B /* Sources */,
+				22EF30B31C1410E0A6ADB3E9 /* Frameworks */,
+				EEA1A8F06E3D231B66009F97 /* Resources */,
+				14E8187DBF78C3B9FD3696D9 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				4C407FA4F865E2EB71F42DF5 /* PBXTargetDependency */,
+				0AE3EEC91DB4CB2AED7669D0 /* PBXTargetDependency */,
 			);
 			name = NativeTone;
 			productName = NativeTone;
-			productReference = 02BC2AC10716D99647A5F11F /* NativeTone.app */;
+			productReference = ED3C1E1EFE0931EAC03F4B56 /* NativeTone.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		1BB6F914151F25F136848E7A /* Project object */ = {
+		FF3D75232B9A26129CCFE70B /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 2600;
 			};
-			buildConfigurationList = 802825831A0826EA4FBE923B /* Build configuration list for PBXProject "NativeTone" */;
+			buildConfigurationList = ACA4D0C762D2359052933E90 /* Build configuration list for PBXProject "NativeTone" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -240,232 +240,84 @@
 				en,
 				Base,
 			);
-			mainGroup = 4DA35027C55E629A819365F1;
+			mainGroup = 8F9A1DCEB7D4EA038CCF07AC;
 			minimizedProjectReferenceProxies = 0;
 			preferredProjectObjectVersion = 100;
-			productRefGroup = 9223B4AE086217CFEAB4F2A6 /* Products */;
+			productRefGroup = BF0735740BE70F7FAA596A86 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				EB515DF0DE815FA624F879B0 /* NativeTone */,
-				6761978F22F355EE1940EF4D /* NativeToneKeyboard */,
+				7F79A2981649A3A3AB324BF7 /* NativeTone */,
+				75EBBA4EA5621BBCF0CC8D72 /* NativeToneKeyboard */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		0D12B57FBE63BFECC9CA6345 /* Resources */ = {
+		C2F47DF22D3DC31F49344E16 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				96789BD08138B6CDF2F19923 /* PrivacyInfo.xcprivacy in Resources */,
+				F72AE0938800836D99E584B8 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		9FCB051BE1461457B787E13D /* Resources */ = {
+		EEA1A8F06E3D231B66009F97 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4E777001B762C827A03B1FCA /* Assets.xcassets in Resources */,
-				9692C9EB88AA1405CFDDBFF5 /* PrivacyInfo.xcprivacy in Resources */,
+				299D53D239BA7BEBCE4FA138 /* Assets.xcassets in Resources */,
+				3B908E4BBD93F03CECD9EC24 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		243922C3BDC685C4491709C6 /* Sources */ = {
+		337008F31C1474D73018AF4B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1C7C06E06CD059545C3E3C49 /* Models.swift in Sources */,
-				ACEA489D2FDEBEA955088F6C /* NativeToneClient.swift in Sources */,
-				0E28C05850CC4367E6057AAB /* Settings.swift in Sources */,
-				5C8DBC7ECC29A2D24C6350C6 /* HistoryPage.swift in Sources */,
-				2F43D80F9B67807AB5D331CF /* HistoryStore.swift in Sources */,
-				7EDADEE264E3F77DCE9269C6 /* NativeToneApp.swift in Sources */,
-				FB136C9D4ACE9A87FEFA91BD /* RootView.swift in Sources */,
-				4023DC93F22976806240EBEF /* Theme.swift in Sources */,
+				8FC2DFD8EE9753052B652662 /* Models.swift in Sources */,
+				3B05B5E706942A6DEB59C8E4 /* NativeToneClient.swift in Sources */,
+				F53BE07CFCD90A6A5AE5161E /* Settings.swift in Sources */,
+				A27DAEA9F3CEA865F6A6F5E6 /* HistoryPage.swift in Sources */,
+				DCF49219F7D90FF172277C38 /* HistoryStore.swift in Sources */,
+				5896C912B9197B0FC8F40458 /* NativeToneApp.swift in Sources */,
+				69BA538D1F6DFF3A672EC284 /* RootView.swift in Sources */,
+				54D4A42FF6F5660B73ADFC02 /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		7CEFFD07EFF3A4E35FA9024B /* Sources */ = {
+		5319F2DFE7515E5866BA1B82 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E97D26CAD072237D7C6CD0A4 /* Models.swift in Sources */,
-				0E7F4530C5F166F540DD1ECD /* NativeToneClient.swift in Sources */,
-				34B534229334BE1443824A19 /* Settings.swift in Sources */,
-				0DCDD05D549EA9F4C7ADEE5E /* FlickKey.swift in Sources */,
-				972DA9136F6F36C23F5A6450 /* HangulComposer.swift in Sources */,
-				C5A77488565B03AFFC889FD2 /* KeyButton.swift in Sources */,
-				B62EDF01413F9408364D3715 /* KeyboardViewController.swift in Sources */,
-				9C56497BED6CC046B57461E7 /* LatinComposer.swift in Sources */,
-				9BDB59FFFC7B130A28E9BCF5 /* SuggestionBarView.swift in Sources */,
+				152AEACEF718F89ED3D1B7A3 /* Models.swift in Sources */,
+				9E5C1127593EFDB8B8F83442 /* NativeToneClient.swift in Sources */,
+				3E46D2B723B5EF21EE8FAB78 /* Settings.swift in Sources */,
+				9516200D94AD3015734A701C /* FlickKey.swift in Sources */,
+				213EBD19202A9642190BE865 /* HangulComposer.swift in Sources */,
+				D705011FAF50E04A0C82EB6F /* KeyButton.swift in Sources */,
+				B5C41D7EF2169CC4ECBD9AB3 /* KeyboardViewController.swift in Sources */,
+				DE287C211D58FFD3DF2F57A3 /* LatinComposer.swift in Sources */,
+				535BCD7C436CFEEF353C50D9 /* SuggestionBarView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		4C407FA4F865E2EB71F42DF5 /* PBXTargetDependency */ = {
+		0AE3EEC91DB4CB2AED7669D0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = NativeToneKeyboard;
-			target = 6761978F22F355EE1940EF4D /* NativeToneKeyboard */;
-			targetProxy = F4B99FDA99DFAAE2497B5CAC /* PBXContainerItemProxy */;
+			target = 75EBBA4EA5621BBCF0CC8D72 /* NativeToneKeyboard */;
+			targetProxy = A2F6024AB7C85F1B191F7C6D /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		1D00826B26FCF05C91BED6CB /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGN_ENTITLEMENTS = App/NativeTone.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
-				DEVELOPMENT_TEAM = A7QB8PT33N;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = App/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.addvalue.nativetone;
-				SDKROOT = iphoneos;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		532FC1D2654F42E5963FC289 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGN_ENTITLEMENTS = Keyboard/NativeToneKeyboard.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
-				DEVELOPMENT_TEAM = A7QB8PT33N;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Keyboard/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.addvalue.nativetone.keyboard;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		77E4BA0BA65A9A99EF860A59 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGN_ENTITLEMENTS = Keyboard/NativeToneKeyboard.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
-				DEVELOPMENT_TEAM = A7QB8PT33N;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Keyboard/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.addvalue.nativetone.keyboard;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Debug;
-		};
-		9A114BFC3FF6A08543842237 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				MTL_FAST_MATH = YES;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
-		EC647A2B0E8DACEFC2D15389 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGN_ENTITLEMENTS = App/NativeTone.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
-				DEVELOPMENT_TEAM = A7QB8PT33N;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = App/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.addvalue.nativetone;
-				SDKROOT = iphoneos;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Debug;
-		};
-		FCAB95A29CF042FB43F7D66A /* Debug */ = {
+		157B57E2AB358E4727252F96 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -526,37 +378,185 @@
 			};
 			name = Debug;
 		};
+		75AC69BDCB80AC7EA1745FE0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = Keyboard/NativeToneKeyboard.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 10;
+				DEVELOPMENT_TEAM = A7QB8PT33N;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Keyboard/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.addvalue.nativetone.keyboard;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		8020B79A468E45A1B42F7948 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = App/NativeTone.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 10;
+				DEVELOPMENT_TEAM = A7QB8PT33N;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = App/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.addvalue.nativetone;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		941BB123780C78AB2707B731 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = Keyboard/NativeToneKeyboard.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 10;
+				DEVELOPMENT_TEAM = A7QB8PT33N;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Keyboard/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.addvalue.nativetone.keyboard;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A13D29EF6491773034773D4F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		DB7EEB50881C83FA554B9089 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = App/NativeTone.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 10;
+				DEVELOPMENT_TEAM = A7QB8PT33N;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = App/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.addvalue.nativetone;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		652F27BF1269FDB78A160A37 /* Build configuration list for PBXNativeTarget "NativeTone" */ = {
+		ACA4D0C762D2359052933E90 /* Build configuration list for PBXProject "NativeTone" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				1D00826B26FCF05C91BED6CB /* Release */,
-				EC647A2B0E8DACEFC2D15389 /* Debug */,
+				157B57E2AB358E4727252F96 /* Debug */,
+				A13D29EF6491773034773D4F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		7A941BF5301100DFC2BF0912 /* Build configuration list for PBXNativeTarget "NativeToneKeyboard" */ = {
+		B4E682E9BDB7F10B888170FB /* Build configuration list for PBXNativeTarget "NativeTone" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				532FC1D2654F42E5963FC289 /* Release */,
-				77E4BA0BA65A9A99EF860A59 /* Debug */,
+				DB7EEB50881C83FA554B9089 /* Release */,
+				8020B79A468E45A1B42F7948 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		802825831A0826EA4FBE923B /* Build configuration list for PBXProject "NativeTone" */ = {
+		CB55FB4C6CD2DD48CAFCCAD3 /* Build configuration list for PBXNativeTarget "NativeToneKeyboard" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				FCAB95A29CF042FB43F7D66A /* Debug */,
-				9A114BFC3FF6A08543842237 /* Release */,
+				941BB123780C78AB2707B731 /* Release */,
+				75AC69BDCB80AC7EA1745FE0 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = 1BB6F914151F25F136848E7A /* Project object */;
+	rootObject = FF3D75232B9A26129CCFE70B /* Project object */;
 }

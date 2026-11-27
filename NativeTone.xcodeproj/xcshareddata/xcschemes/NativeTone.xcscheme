@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "EB515DF0DE815FA624F879B0"
+               BlueprintIdentifier = "7F79A2981649A3A3AB324BF7"
                BuildableName = "NativeTone.app"
                BlueprintName = "NativeTone"
                ReferencedContainer = "container:NativeTone.xcodeproj">
@@ -30,7 +30,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "EB515DF0DE815FA624F879B0"
+            BlueprintIdentifier = "7F79A2981649A3A3AB324BF7"
             BuildableName = "NativeTone.app"
             BlueprintName = "NativeTone"
             ReferencedContainer = "container:NativeTone.xcodeproj">
@@ -53,7 +53,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "EB515DF0DE815FA624F879B0"
+            BlueprintIdentifier = "7F79A2981649A3A3AB324BF7"
             BuildableName = "NativeTone.app"
             BlueprintName = "NativeTone"
             ReferencedContainer = "container:NativeTone.xcodeproj">
@@ -70,7 +70,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "EB515DF0DE815FA624F879B0"
+            BlueprintIdentifier = "7F79A2981649A3A3AB324BF7"
             BuildableName = "NativeTone.app"
             BlueprintName = "NativeTone"
             ReferencedContainer = "container:NativeTone.xcodeproj">
