@@ -16,15 +16,21 @@ enum KeyboardTheme {
         ? UIColor(red: 0.04, green: 0.08, blue: 0.15, alpha: 1) : .white }
 }
 
-/// Key-press haptic: the selection tick, the shortest and lightest system haptic. It is made for rapid
-/// repeats (like a picker wheel), so every key in a fast burst still gets its tap.
+/// Key-press haptic. Light is the selection tick, the shortest system haptic, made for rapid repeats
+/// so every key in a fast burst still gets its tap; medium and strong use short impacts.
 enum Haptics {
     static var enabled = AppSettings.haptics
+    static var strength = AppSettings.hapticStrength
     private static let tick = UISelectionFeedbackGenerator()
+    private static let soft = UIImpactFeedbackGenerator(style: .light)
+    private static let firm = UIImpactFeedbackGenerator(style: .medium)
     static func tap() {
         guard enabled else { return }
-        tick.selectionChanged()
-        tick.prepare()
+        switch strength {
+        case .light: tick.selectionChanged(); tick.prepare()
+        case .medium: soft.impactOccurred(); soft.prepare()
+        case .strong: firm.impactOccurred(); firm.prepare()
+        }
     }
 }
 
@@ -102,8 +108,11 @@ final class KeyButton: UIButton {
     }
 
     /// iOS-style key preview bubble above the pressed character key.
+    /// Off in settings: no preview bubble (lets the user compare typing speed without it).
+    static var popupEnabled = AppSettings.keyPopup
+
     private func showPopup() {
-        guard style == .letter, let t = title(for: .normal), t.count == 1 else { return }
+        guard Self.popupEnabled, style == .letter, let t = title(for: .normal), t.count == 1 else { return }
         // The bubble is built once per key and only shown or hidden afterwards.
         if popup == nil {
             let l = UILabel()

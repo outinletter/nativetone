@@ -159,6 +159,8 @@ final class KeyboardViewController: UIInputViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         Haptics.enabled = AppSettings.haptics
+        Haptics.strength = AppSettings.hapticStrength
+        KeyButton.popupEnabled = AppSettings.keyPopup
         tone = AppSettings.tone
         bar.setTone(tone)
         bar.autoMode = AppSettings.autoSuggest
@@ -686,6 +688,28 @@ final class KeyboardViewController: UIInputViewController {
         scheduleAutoSuggest()
     }
 
+    /// Two quick spaces right after a word (English or Korean) become ". ", like the iOS keyboard.
+    private var lastSpaceAt = Date.distantPast
+    private func tapSpace() {
+        let now = Date()
+        defer { lastSpaceAt = now }
+        if AppSettings.doubleSpacePeriod, now.timeIntervalSince(lastSpaceAt) < 0.45,
+           language == .english || language == .korean, selection == nil {
+            flushSync()
+            let before = textDocumentProxy.documentContextBeforeInput ?? ""
+            if before.hasSuffix(" "), let prev = before.dropLast().last, prev.isLetter || prev.isNumber {
+                invalidateSuggestion()
+                ownDelete()
+                ownInsert(". ")
+                lastSpaceAt = .distantPast
+                updateAutoShift()
+                scheduleAutoSuggest()
+                return
+            }
+        }
+        type(" ")
+    }
+
     private func backspace() {
         if deleteSelection() { scheduleAutoSuggest(); return }
         invalidateSuggestion()
@@ -906,7 +930,7 @@ final class KeyboardViewController: UIInputViewController {
         case .chinese: spaceTitle = "空格"
         }
         let space = KeyButton(title: spaceTitle, style: .letter, fontSize: 16)
-        space.onTap = { [weak self] in self?.type(" ") }
+        space.onTap = { [weak self] in self?.tapSpace() }
         attachSpaceCursor(space)
         let ret = KeyButton(title: "return", style: .special, fontSize: 16)
         ret.onTap = { [weak self] in self?.tapReturn() }

@@ -70,6 +70,18 @@ enum InputLanguage: String, CaseIterable, Identifiable {
 }
 
 /// Keyboard height preset (points, excluding the Korean compose bar).
+enum HapticStrength: String, CaseIterable, Identifiable {
+    case light, medium, strong
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .light: return L("약하게", "Light")
+        case .medium: return L("보통", "Medium")
+        case .strong: return L("강하게", "Strong")
+        }
+    }
+}
+
 enum KeyboardHeight: String, CaseIterable, Identifiable {
     case compact, normal, tall
     var id: String { rawValue }
@@ -139,6 +151,9 @@ enum AppSettings {
         static let haptics = "haptics"
         static let showNumberRow = "showNumberRow"
         static let autoCapitalize = "autoCapitalize"
+        static let hapticStrength = "hapticStrength"
+        static let keyPopup = "keyPopup"
+        static let doubleSpacePeriod = "doubleSpacePeriod"
     }
 
     /// Master switch for AI rewriting in the keyboard. Off = a plain keyboard that sends nothing (default on).
@@ -218,6 +233,24 @@ enum AppSettings {
     static var haptics: Bool {
         get { defaults.object(forKey: Key.haptics) as? Bool ?? true }
         set { defaults.set(newValue, forKey: Key.haptics) }
+    }
+
+    /// Keyboard: how strong the key haptic is (default light).
+    static var hapticStrength: HapticStrength {
+        get { HapticStrength(rawValue: defaults.string(forKey: Key.hapticStrength) ?? "") ?? .light }
+        set { defaults.set(newValue.rawValue, forKey: Key.hapticStrength) }
+    }
+
+    /// Keyboard: the enlarged preview bubble above a pressed key (default on).
+    static var keyPopup: Bool {
+        get { defaults.object(forKey: Key.keyPopup) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Key.keyPopup) }
+    }
+
+    /// Keyboard: two quick spaces after a word type ". " (default on).
+    static var doubleSpacePeriod: Bool {
+        get { defaults.object(forKey: Key.doubleSpacePeriod) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Key.doubleSpacePeriod) }
     }
 
     /// Keyboard: a row of 1–0 above the letters (default off).

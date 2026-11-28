@@ -13,6 +13,9 @@ struct RootView: View {
     @State private var japaneseLayout = AppSettings.japaneseLayout
     @State private var keyboardHeight = AppSettings.keyboardHeight
     @State private var haptics = AppSettings.haptics
+    @State private var hapticStrength = AppSettings.hapticStrength
+    @State private var keyPopup = AppSettings.keyPopup
+    @State private var doubleSpacePeriod = AppSettings.doubleSpacePeriod
     @State private var showNumberRow = AppSettings.showNumberRow
     @State private var autoCapitalize = AppSettings.autoCapitalize
     @State private var saveHistory = AppSettings.saveHistory
@@ -59,6 +62,9 @@ struct RootView: View {
         .onChange(of: japaneseLayout) { AppSettings.japaneseLayout = $1 }
         .onChange(of: keyboardHeight) { AppSettings.keyboardHeight = $1 }
         .onChange(of: haptics) { AppSettings.haptics = $1 }
+        .onChange(of: hapticStrength) { AppSettings.hapticStrength = $1 }
+        .onChange(of: keyPopup) { AppSettings.keyPopup = $1 }
+        .onChange(of: doubleSpacePeriod) { AppSettings.doubleSpacePeriod = $1 }
         .onChange(of: showNumberRow) { AppSettings.showNumberRow = $1 }
         .onChange(of: autoCapitalize) { AppSettings.autoCapitalize = $1 }
         .onChange(of: saveHistory) { AppSettings.saveHistory = $1 }
@@ -146,11 +152,18 @@ struct RootView: View {
             }
             Toggle(L("숫자 키 줄 보이기", "Show number row"), isOn: $showNumberRow)
             Toggle(L("키 입력 진동", "Key haptics"), isOn: $haptics)
+            if haptics {
+                Picker(L("진동 세기", "Haptic strength"), selection: $hapticStrength) {
+                    ForEach(HapticStrength.allCases) { Text($0.label).tag($0) }
+                }
+            }
+            Toggle(L("키 누를 때 크게 보기", "Key press preview"), isOn: $keyPopup)
+            Toggle(L("스페이스 두 번으로 마침표", "Double-space period"), isOn: $doubleSpacePeriod)
             Toggle(L("문장 시작 자동 대문자", "Auto-capitalize sentences"), isOn: $autoCapitalize)
         } header: {
             Theme.eyebrow(L("키보드", "Keyboard"))
         } footer: {
-            Text(L("영어는 항상 사용할 수 있어요. 켠 언어는 키보드의 언어 키로 전환해요. 일본어는 가나(플릭) 또는 로마자, 중국어는 병음(예: nihao)으로 입력해요. 자동 교정을 켜면 입력을 멈출 때 현재 문장이 서버로 전송돼요.", "English is always available. Enabled languages are switched with the language key. Type Japanese in kana (flick) or romaji and Chinese in pinyin (e.g. nihao). With auto-suggest on, the current sentence is sent to the server when you pause."))
+            Text(L("영어는 항상 사용할 수 있어요. 켠 언어는 키보드의 언어 키로 전환해요. 일본어는 가나(플릭) 또는 로마자, 중국어는 병음(예: nihao)으로 입력해요. 자동 교정을 켜면 입력을 멈출 때 현재 문장이 서버로 전송돼요. 블루투스 키보드를 연결하면 iOS가 서드파티 키보드로 키 입력을 보내지 않아서, 언어는 설정 → 일반 → 키보드에 추가한 Apple 키보드(예: 한국어) 사이에서만 바뀌어요.", "English is always available. Enabled languages are switched with the language key. Type Japanese in kana (flick) or romaji and Chinese in pinyin (e.g. nihao). With auto-suggest on, the current sentence is sent to the server when you pause. With a Bluetooth keyboard, iOS doesn't send keystrokes to third-party keyboards, so you can only switch between the Apple keyboards added in Settings → General → Keyboard (e.g. Korean)."))
         }
         .listRowBackground(Theme.surface)
     }
