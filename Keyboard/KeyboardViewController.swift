@@ -194,6 +194,11 @@ final class KeyboardViewController: UIInputViewController {
         updateAutoShift()
     }
 
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        finishWord()     // never leave a marked word behind when switching keyboards
+    }
+
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
         // Reading the field's text is a slow cross-process call. Skip it for our own keystrokes
@@ -265,7 +270,7 @@ final class KeyboardViewController: UIInputViewController {
         let offset = sel.upperBound - mirrorCaret
         if offset != 0 {
             ownUntil = Date().addingTimeInterval(0.5)
-            textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
+            liveValid = false; textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
         }
         for _ in 0..<sel.count { ownDelete() }
         var chars = Array(mirrorText)
@@ -307,9 +312,15 @@ final class KeyboardViewController: UIInputViewController {
             mirrorText = head + tail
             mirrorCaret = head.count
             mirrorMovable = true
+            liveHead = head; liveTail = tail; liveValid = true
         }
+        if mirrorMovable == false { liveValid = false }
         if selection != nil, mirrorText != previousMirror { setSelection(nil) }
-        bar.setComposing(mirrorText, caret: mirrorCaret)
+        if !pendingSyllable.isEmpty, liveValid {
+            showLiveComposing()
+        } else {
+            bar.setComposing(mirrorText, caret: mirrorCaret)
+        }
     }
 
     /// The x icon: deletes the whole line shown in the bar from the host field.
@@ -326,7 +337,7 @@ final class KeyboardViewController: UIInputViewController {
             let tail = mirrorText.count - mirrorCaret
             if tail > 0 {
                 ownUntil = Date().addingTimeInterval(0.5)
-                textDocumentProxy.adjustTextPosition(byCharacterOffset: tail)
+                liveValid = false; textDocumentProxy.adjustTextPosition(byCharacterOffset: tail)
             }
             for _ in 0..<mirrorText.count { ownDelete() }
         }
@@ -344,7 +355,7 @@ final class KeyboardViewController: UIInputViewController {
         invalidateSuggestion()
         finishWord()
         ownUntil = Date().addingTimeInterval(0.5)
-        textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
+        liveValid = false; textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
         mirrorCaret = index
         bar.setComposing(mirrorText, caret: index)
     }
@@ -388,16 +399,31 @@ final class KeyboardViewController: UIInputViewController {
     private func ownInsert(_ s: String) {
         ownUntil = Date().addingTimeInterval(0.5)
         textDocumentProxy.insertText(s)
+        if liveValid {
+            liveHead += s
+            if s.contains("\n") { liveHead = liveHead.components(separatedBy: "\n").last ?? "" }
+        }
     }
 
     private func ownDelete() {
         ownUntil = Date().addingTimeInterval(0.5)
         textDocumentProxy.deleteBackward()
+        if liveValid { if liveHead.isEmpty { liveValid = false } else { liveHead.removeLast() } }
+    }
+
+    /// Shows the line with the composing syllable at the caret in the bar, without reading the field.
+    private func showLiveComposing() {
+        guard aiOn, liveValid, selection == nil, liveHead.hasSuffix(shown) else { scheduleMirror(); return }
+        let head = String(liveHead.dropLast(shown.count)) + composer.committed + pendingSyllable
+        bar.setComposing(head + liveTail, caret: head.count)
     }
 
     /// Makes the host field show the current word buffer. Keys typed within a few milliseconds of each other
     /// are folded into one update, so a fast burst costs one delete/insert round trip instead of one per key.
     private var syncPending = false
+    /// The line around the cursor as last read from the field, kept current by our own inserts and deletes
+    /// so the bar can show the composing syllable at once without asking the host app.
+    private var liveHead = "", liveTail = "", liveValid = false
     private func syncField() {
         guard !syncPending else { return }
         syncPending = true
@@ -408,7 +434,17 @@ final class KeyboardViewController: UIInputViewController {
     private func flushSync() {
         guard syncPending else { return }
         syncPending = false
-        let new = composeText
+        applyToField(fieldTarget)
+    }
+
+    /// Korean with the bar on: the syllable still being composed lives only in the bar, and the field gets
+    /// finished syllables only. A key then costs at most one insert, and nothing while a syllable is built.
+    private var barComposes: Bool { aiOn && (language == .korean || !composer.isEmpty) }
+    private var fieldTarget: String { barComposes ? composer.committed : composeText }
+    private var pendingSyllable: String { barComposes ? composer.composing : "" }
+
+    /// Brings the field's copy of the current word (`shown`) to `new` with the fewest deletes and inserts.
+    private func applyToField(_ new: String) {
         guard new != shown else { return }
         let old = Array(shown), neu = Array(new)
         var keep = 0
@@ -422,6 +458,7 @@ final class KeyboardViewController: UIInputViewController {
     /// The word is done (space, punctuation, return, cursor move, language switch): its text simply stays in the field.
     private func finishWord() {
         flushSync()
+        if !composer.isEmpty { applyToField(composer.text) }   // the syllable shown in the bar goes into the field
         composeClear()
         shown = ""
     }
@@ -459,7 +496,7 @@ final class KeyboardViewController: UIInputViewController {
         flushSync()
         if let picked = selectedMirrorText { return picked }
         if let sel = textDocumentProxy.selectedText, !sel.isEmpty { return sel }
-        let before = textDocumentProxy.documentContextBeforeInput ?? ""
+        let before = (textDocumentProxy.documentContextBeforeInput ?? "") + pendingSyllable
         let after = textDocumentProxy.documentContextAfterInput ?? ""
         return sentenceHead(of: before) + sentenceTail(before: before, after: after)
     }
@@ -592,7 +629,7 @@ final class KeyboardViewController: UIInputViewController {
             let offset = sel.upperBound - mirrorCaret
             if offset != 0 {
                 ownUntil = Date().addingTimeInterval(0.5)
-                textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
+                liveValid = false; textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
             }
             for _ in 0..<sel.count { ownDelete() }
             ownInsert(p.result.best)
@@ -615,7 +652,7 @@ final class KeyboardViewController: UIInputViewController {
                                     after: textDocumentProxy.documentContextAfterInput ?? "")
             if !tail.isEmpty {
                 ownUntil = Date().addingTimeInterval(0.5)
-                textDocumentProxy.adjustTextPosition(byCharacterOffset: tail.count)
+                liveValid = false; textDocumentProxy.adjustTextPosition(byCharacterOffset: tail.count)
             }
             for _ in 0..<p.original.count { ownDelete() }
         }
@@ -716,6 +753,7 @@ final class KeyboardViewController: UIInputViewController {
         if isCompose && !composeText.isEmpty {
             if language == .korean { composer.backspace() } else { latin.backspace() }
             syncField()
+            if language == .korean { showLiveComposing() }
         } else {
             flushSync()      // a pending word update must reach the field before we delete behind it
             ownDelete()
@@ -770,6 +808,7 @@ final class KeyboardViewController: UIInputViewController {
         if HangulComposer.isJamo(s), let ch = s.first {
             composer.input(ch)
             syncField()
+            showLiveComposing()
         } else {
             finishWord()
             ownInsert(s)
@@ -992,7 +1031,7 @@ final class KeyboardViewController: UIInputViewController {
             if n != 0 {
                 cursorRemainder -= CGFloat(n) * step
                 ownUntil = Date().addingTimeInterval(0.5)
-                textDocumentProxy.adjustTextPosition(byCharacterOffset: n)
+                liveValid = false; textDocumentProxy.adjustTextPosition(byCharacterOffset: n)
             }
         case .ended, .cancelled, .failed:
             (g.view as? KeyButton)?.setCursorMode(false)
@@ -1017,7 +1056,7 @@ final class KeyboardViewController: UIInputViewController {
     private func moveCursor(_ offset: Int) {
         guard composeText.isEmpty else { return }
         ownUntil = Date().addingTimeInterval(0.5)
-        textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
+        liveValid = false; textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
     }
 
     private func buildKanaKeys() {

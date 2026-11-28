@@ -18,6 +18,7 @@ _최초 생성: 2026-11-26 (자동 수집 정보 기반)_
 - 1.1(빌드 11)에 추가로 포함: 스페이스 두 번 마침표(영어·한국어), 진동 세기(약하게=선택 틱/보통/강하게), 키 크게 보기 끄기 옵션, 블루투스 키보드 안내 문구.
 
 ## 다음 할 일
+- [ ] 한글 조합 새 방식 기기 확인(미커밋, 설치함): 빠른 타자 속도, 상단 바에 조합 중 글자 표시, 백스페이스 연타, 자동 교정·↑적용에 마지막 글자 포함 — Keyboard/KeyboardViewController.swift `fieldTarget`/`showLiveComposing`/`finishWord`
 - [ ] 기기 확인: 키 크게 보기를 끄면 연속 타자가 빨라지는지, 진동 세기, 스페이스 두 번 마침표 — Keyboard/KeyButton.swift, KeyboardViewController.swift `tapSpace`
 - [ ] 1.1 심사 결과 확인(App Store Connect 앱 심사), 거절 시 사유 대응
 - [ ] 구독 그룹 NativeTone-Free 정리(앱에 구독 기능 없음, 제품 ID monthly인데 기간 3개월)
@@ -26,11 +27,14 @@ _최초 생성: 2026-11-26 (자동 수집 정보 기반)_
 - 입력은 항상 호스트 입력창에 직접 들어가고, 상단 바는 미러와 제안만 보여 준다(바 전용 버퍼 방식은 글 유실 문제로 폐기).
 - 설치·TestFlight 업로드는 Release 빌드(`-configuration Release`, derivedData `/tmp/claude-501/nt-rel`). 업로드용 ExportOptions.plist는 임시 폴더에서 자주 사라지므로 매번 새로 만든다.
 - 빌드 번호는 Tools/generate_project.rb의 CURRENT_PROJECT_VERSION. 파일 추가·삭제 후 `ruby Tools/generate_project.rb` 실행.
+- 한글 조합: 예전엔 키마다 deleteBackward+insertText 두 번이라 한글만 느렸음. marked text 방식은 백스페이스 연타 시 전체 삭제 문제로 폐기. 지금은 조합 중 음절은 상단 바에만 보이고, 입력창에는 완성된 음절만 넣음(AI 꺼짐이면 예전처럼 입력창에 직접). 전체 단어를 바에만 두던 옛 방식(글 유실)과 달리 바에만 있는 것은 한 음절.
 - 블루투스(하드웨어) 키보드 입력은 iOS가 서드파티 키보드에 보내지 않음 — 앱으로 고칠 수 없어 안내 문구로만 처리.
 - 처리방침: https://outinletter.github.io/privacy-policy/nativetone.html, 지원: …/nativetone-support.html
 
 ## 최근 세션 로그
 <!-- 최신이 위로. 형식: YYYY-MM-DD — 한 일 / 남은 일 -->
+- 2026-11-28 — marked text 폐기(백스페이스 전체 삭제), 조합 중 음절은 상단 바에만 표시 / 설치함, 기기 확인 남음
+- 2026-11-28 — 한글만 연속 타자 느림 → 조합 중 단어를 지우기+넣기 대신 marked text 한 번으로 전송 / 설치함, 기기 확인 남음
 - 2026-11-28 — 빌드 10 심사 취소, 빌드 11로 1.1 재제출(새 기능 안내·심사 메모 갱신) / 심사 결과 대기
 - 2026-11-28 — 스페이스 두 번 마침표, 진동 세기, 키 크게 보기 옵션, 블루투스 키보드 안내 / 푸시·설치함, 기기 확인 남음
 - 2026-11-28 — 1.1(빌드 10) 업로드·심사 제출(새 기능 안내 3개 언어, 심사 메모 갱신) / 심사 결과 대기
